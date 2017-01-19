@@ -1,6 +1,7 @@
 module App.State exposing (init, update, subscriptions)
 
 import App.Types exposing (..)
+import Dict exposing (Dict)
 
 
 initialModel : Model
@@ -9,6 +10,7 @@ initialModel =
     , width = 0
     , height = 0
     , grid = []
+    , paths = Dict.empty
     }
 
 
@@ -23,24 +25,50 @@ update msg model =
         Test ->
             let
                 height =
-                    5
+                    2
 
                 width =
-                    4
+                    2
 
                 grid =
                     buildGrid height width
 
+                paths =
+                    collectPathes grid
+
                 _ =
                     Debug.log "grid" (toString grid)
+
+                _ =
+                    Debug.log "paths" (toString paths)
             in
                 ( { model
                     | grid = grid
                     , width = width
                     , height = height
+                    , paths = paths
                   }
                 , Cmd.none
                 )
+
+        Select path ->
+            let
+                newPaths =
+                    Dict.update path
+                        (\checked ->
+                            case checked of
+                                Nothing ->
+                                    Nothing
+
+                                Just a ->
+                                    Just True
+                        )
+                        model.paths
+
+                _ =
+                    Debug.log "paths" (toString newPaths)
+            in
+                ( { model | paths = newPaths }, Cmd.none )
 
 
 buildGrid : Int -> Int -> List (List Box)
@@ -58,16 +86,6 @@ row y xs =
     List.foldr (\x boxes -> (buildBox x y) :: boxes) [] xs
 
 
-
--- buildBox : Int -> Int -> Box
--- buildBox x y =
---     Dict.singleton ( x, y, x + 1, y ) False
---         |> Dict.insert ( x, y + 1, x, y ) False
---         |> Dict.insert ( x + 1, y, x + 1, y + 1 ) False
---         |> Dict.insert ( x + 1, y + 1, x, y + 1 ) False
---         |> Box
-
-
 buildBox : Int -> Int -> Box
 buildBox x y =
     Box
@@ -77,8 +95,28 @@ buildBox x y =
         ( x, y + 1, x, y )
 
 
+collectPathes : Grid -> Dict Path Bool
+collectPathes grid =
+    let
+        pathes =
+            Dict.empty
 
--- pathes x y =
+        pathList =
+            List.foldl (\rows paths -> List.foldl extractPathsFromBox paths rows) Dict.empty grid
+    in
+        pathList
+
+
+extractPathsFromBox : Box -> Dict.Dict Path Bool -> Dict.Dict Path Bool
+extractPathsFromBox box paths =
+    paths
+        |> Dict.insert box.up False
+        |> Dict.insert box.right False
+        |> Dict.insert box.down False
+        |> Dict.insert box.left False
+
+
+
 -- SUBSCRIPTIONS
 
 

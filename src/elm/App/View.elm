@@ -1,6 +1,7 @@
 module App.View exposing (viewHeader, viewBody)
 
 import App.Types exposing (..)
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -95,7 +96,10 @@ viewTableCell model y x box =
 
         default =
             [ div
-                [ class "edge edge__h" ]
+                [ class "edge edge__h"
+                , classList [ ( "edge__done edge__done__self", isPathSelected model.paths box.up ) ]
+                , onClick <| Select box.up
+                ]
                 []
             , div
                 [ class "edge edge__v" ]
@@ -111,6 +115,11 @@ viewTableCell model y x box =
                 [ class "edges" ]
                 (default ++ lastOnX ++ lastOnY ++ last)
             ]
+
+
+isPathSelected : Dict.Dict Path Bool -> Path -> Bool
+isPathSelected paths path =
+    Maybe.withDefault False (Dict.get path paths)
 
 
 

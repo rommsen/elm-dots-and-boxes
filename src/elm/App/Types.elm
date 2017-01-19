@@ -1,17 +1,24 @@
 module App.Types exposing (..)
 
+import Dict exposing (Dict)
+
 
 type alias Model =
     { query : String
     , width : Int
     , height : Int
-    , grid : List (List Box)
+    , grid : Grid
+    , paths : Dict Path Bool
     }
 
 
 
 -- type Box
 --     = Box (Dict Path Bool)
+
+
+type alias Grid =
+    List (List Box)
 
 
 type alias Path =
@@ -40,3 +47,4 @@ type Pathes
 
 type Msg
     = Test
+    | Select Path
