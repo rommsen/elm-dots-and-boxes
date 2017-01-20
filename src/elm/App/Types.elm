@@ -4,47 +4,45 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-    { query : String
-    , width : Int
-    , height : Int
-    , grid : Grid
-    , paths : Dict Path Bool
+    { boxes : Boxes
+    , selectedLines : SelectedLines
+    , boardSize : BoardSize
     }
 
 
-
--- type Box
---     = Box (Dict Path Bool)
-
-
-type alias Grid =
-    List (List Box)
+type alias Boxes =
+    List Box
 
 
-type alias Path =
-    ( Int, Int, Int, Int )
+{-| Can not be a union type because I need it as a key in a Dict
+-}
+type alias Point =
+    ( Int, Int )
 
 
-
--- type alias Boing =
---     { edges : List Path
---       done: Bool
---       doneBy: Player
---     }
+{-| Can not be a union type because I need it as a key in a Dict
+-}
+type alias Line =
+    ( Point, Point )
 
 
 type alias Box =
-    { up : Path
-    , right : Path
-    , down : Path
-    , left : Path
+    { up : Line
+    , down : Line
+    , left : Line
+    , right : Line
+    , done : Bool
     }
 
 
-type Pathes
-    = Dict Path Bool
+type BoardSize
+    = BoardSize Int Int
+
+
+type alias SelectedLines =
+    Dict Line Bool
 
 
 type Msg
-    = Test
-    | Select Path
+    = Start
+    | Select Line

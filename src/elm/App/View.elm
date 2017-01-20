@@ -5,6 +5,7 @@ import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import List.Extra
 
 
 viewHeader : Model -> Html Msg
@@ -14,7 +15,9 @@ viewHeader model =
             [ div [ class "container" ]
                 [ div [ class "nav" ]
                     [ div [ class "nav-left" ]
-                        [ span [ class "nav-item is-brand", onClick Test ] [ text "Elm Dots and Boxes" ] ]
+                        [ span [ class "nav-item is-brand", onClick Start ]
+                            [ text "Elm Dots and Boxes" ]
+                        ]
                     ]
                 ]
             ]
@@ -24,16 +27,19 @@ viewHeader model =
 viewBody : Model -> Html Msg
 viewBody model =
     let
+        (BoardSize width height) =
+            model.boardSize
+
         tableClasses =
             "field-table"
                 ++ " field-table__"
-                ++ toString model.width
+                ++ toString width
                 ++ " field-table__w"
-                ++ toString model.width
+                ++ toString width
                 ++ " field-table__"
-                ++ toString model.height
+                ++ toString height
                 ++ " field-table__h"
-                ++ toString model.height
+                ++ toString height
     in
         section
             [ class "section" ]
@@ -46,9 +52,16 @@ viewBody model =
 
 viewTableBody : Model -> Html Msg
 viewTableBody model =
-    tbody
-        []
-        (List.indexedMap (viewTableRows model) model.grid)
+    let
+        (BoardSize width height) =
+            model.boardSize
+
+        grid =
+            List.Extra.groupsOf width model.boxes
+    in
+        tbody
+            []
+            (List.indexedMap (viewTableRows model) grid)
 
 
 viewTableRows : Model -> Int -> List Box -> Html Msg
@@ -61,10 +74,18 @@ viewTableRows model y boxes =
 viewTableCell : Model -> Int -> Int -> Box -> Html Msg
 viewTableCell model y x box =
     let
+        (BoardSize width height) =
+            model.boardSize
+
         lastOnX =
-            if x + 1 == model.width then
+            if x + 1 == width then
                 [ div
-                    [ class "edge edge__v edge__v__last" ]
+                    [ class "edge edge__v edge__v__last"
+                    , classList
+                        [ ( "edge__done edge__done__self", isLineSelected box.right model.selectedLines )
+                        ]
+                    , onClick <| Select box.right
+                    ]
                     []
                 , span
                     [ class "dot dot__r dot__t" ]
@@ -74,9 +95,14 @@ viewTableCell model y x box =
                 []
 
         lastOnY =
-            if y + 1 == model.height then
+            if y + 1 == height then
                 [ div
-                    [ class "edge edge__h edge__h__last" ]
+                    [ class "edge edge__h edge__h__last"
+                    , classList
+                        [ ( "edge__done edge__done__self", isLineSelected box.down model.selectedLines )
+                        ]
+                    , onClick <| Select box.down
+                    ]
                     []
                 , span
                     [ class "dot dot__l dot__b" ]
@@ -86,7 +112,7 @@ viewTableCell model y x box =
                 []
 
         last =
-            if x + 1 == model.width && y + 1 == model.height then
+            if x + 1 == width && y + 1 == height then
                 [ span
                     [ class "dot dot__r dot__b" ]
                     []
@@ -97,12 +123,19 @@ viewTableCell model y x box =
         default =
             [ div
                 [ class "edge edge__h"
-                , classList [ ( "edge__done edge__done__self", isPathSelected model.paths box.up ) ]
+                , classList
+                    [ ( "edge__done edge__done__self", isLineSelected box.up model.selectedLines )
+                    ]
                 , onClick <| Select box.up
                 ]
                 []
             , div
-                [ class "edge edge__v" ]
+                [ class "edge edge__v"
+                , classList
+                    [ ( "edge__done edge__done__self", isLineSelected box.left model.selectedLines )
+                    ]
+                , onClick <| Select box.left
+                ]
                 []
             , span
                 [ class "dot dot__l dot__t" ]
@@ -110,16 +143,20 @@ viewTableCell model y x box =
             ]
     in
         td
-            [ class "field-cell" ]
+            [ class "field-cell"
+            , classList
+                [ ( "field-cell__done field-cell__done__self", box.done )
+                ]
+            ]
             [ div
                 [ class "edges" ]
                 (default ++ lastOnX ++ lastOnY ++ last)
             ]
 
 
-isPathSelected : Dict.Dict Path Bool -> Path -> Bool
-isPathSelected paths path =
-    Maybe.withDefault False (Dict.get path paths)
+isLineSelected : Line -> SelectedLines -> Bool
+isLineSelected line selectedLines =
+    Dict.member line selectedLines
 
 
 

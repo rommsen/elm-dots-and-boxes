@@ -6,11 +6,9 @@ import Dict exposing (Dict)
 
 initialModel : Model
 initialModel =
-    { query = ""
-    , width = 0
-    , height = 0
-    , grid = []
-    , paths = Dict.empty
+    { boxes = []
+    , selectedLines = Dict.empty
+    , boardSize = BoardSize 3 3
     }
 
 
@@ -22,63 +20,40 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Test ->
+        Start ->
             let
-                height =
-                    2
-
-                width =
-                    2
-
-                grid =
-                    buildGrid height width
-
-                paths =
-                    collectPathes grid
+                boxes =
+                    buildBoxes model.boardSize
 
                 _ =
-                    Debug.log "grid" (toString grid)
-
-                _ =
-                    Debug.log "paths" (toString paths)
+                    Debug.log "boxes" (toString boxes)
             in
-                ( { model
-                    | grid = grid
-                    , width = width
-                    , height = height
-                    , paths = paths
-                  }
+                ( { model | boxes = boxes }
                 , Cmd.none
                 )
 
-        Select path ->
+        Select line ->
             let
-                newPaths =
-                    Dict.update path
-                        (\checked ->
-                            case checked of
-                                Nothing ->
-                                    Nothing
+                selectedLines =
+                    Dict.insert line True model.selectedLines
 
-                                Just a ->
-                                    Just True
-                        )
-                        model.paths
+                newBoxes =
+                    updateBoxes selectedLines model.boxes
 
                 _ =
-                    Debug.log "paths" (toString newPaths)
+                    Debug.log "selectedLines" (toString selectedLines)
             in
-                ( { model | paths = newPaths }, Cmd.none )
+                ( { model | boxes = newBoxes, selectedLines = selectedLines }, Cmd.none )
 
 
-buildGrid : Int -> Int -> List (List Box)
-buildGrid height width =
+buildBoxes : BoardSize -> Boxes
+buildBoxes (BoardSize width height) =
     rows (List.range 0 (height - 1)) (List.range 0 (width - 1))
 
 
-rows : List Int -> List Int -> List (List Box)
+rows : List Int -> List Int -> List Box
 rows ys xs =
-    List.foldr (\y grid -> row y xs :: grid) [] ys
+    List.foldr (\y boxes -> row y xs ++ boxes) [] ys
 
 
 row : Int -> List Int -> List Box
@@ -89,31 +64,36 @@ row y xs =
 buildBox : Int -> Int -> Box
 buildBox x y =
     Box
-        ( x, y, x + 1, y )
-        ( x + 1, y, x + 1, y + 1 )
-        ( x + 1, y + 1, x, y + 1 )
-        ( x, y + 1, x, y )
+        ( ( x, y )
+        , ( x + 1, y )
+        )
+        ( ( x, y + 1 )
+        , ( x + 1, y + 1 )
+        )
+        ( ( x, y )
+        , ( x, y + 1 )
+        )
+        ( ( x + 1, y )
+        , ( x + 1, y + 1 )
+        )
+        False
 
 
-collectPathes : Grid -> Dict Path Bool
-collectPathes grid =
+updateBoxes : SelectedLines -> Boxes -> Boxes
+updateBoxes paths boxes =
+    List.map (updateBox paths) boxes
+
+
+updateBox : SelectedLines -> Box -> Box
+updateBox paths box =
     let
-        pathes =
-            Dict.empty
-
-        pathList =
-            List.foldl (\rows paths -> List.foldl extractPathsFromBox paths rows) Dict.empty grid
+        done =
+            Dict.member box.up paths
+                && Dict.member box.down paths
+                && Dict.member box.left paths
+                && Dict.member box.right paths
     in
-        pathList
-
-
-extractPathsFromBox : Box -> Dict.Dict Path Bool -> Dict.Dict Path Bool
-extractPathsFromBox box paths =
-    paths
-        |> Dict.insert box.up False
-        |> Dict.insert box.right False
-        |> Dict.insert box.down False
-        |> Dict.insert box.left False
+        { box | done = done }
 
 
 
