@@ -26,6 +26,35 @@ viewHeader model =
 
 viewBody : Model -> Html Msg
 viewBody model =
+    case model.game of
+        NotStarted ->
+            section
+                [ class "section" ]
+                [ div [ class "container" ]
+                    [ div [ class "columns" ]
+                        [ div [ class "column" ]
+                            []
+                        ]
+                    ]
+                ]
+
+        Winner player ->
+            section
+                [ class "section" ]
+                [ div [ class "container" ]
+                    [ div [ class "columns" ]
+                        [ div [ class "column" ]
+                            []
+                        ]
+                    ]
+                ]
+
+        Process ->
+            viewGameInProcess model
+
+
+viewGameInProcess : Model -> Html Msg
+viewGameInProcess model =
     let
         (BoardSize width height) =
             model.boardSize
@@ -43,9 +72,40 @@ viewBody model =
     in
         section
             [ class "section" ]
-            [ table
-                [ class tableClasses ]
-                [ viewTableBody model
+            [ div [ class "container" ]
+                [ div [ class "columns" ]
+                    [ div [ class "column" ]
+                        [ h1
+                            [ classList
+                                [ ( "player_active", model.currentPlayer == Player1 )
+                                , ( "title", True )
+                                ]
+                            ]
+                            [ text <| "Player1: " ++ toString (Tuple.first model.points) ]
+                        ]
+                    , div [ class "column" ]
+                        [ h1
+                            [ classList
+                                [ ( "player_active", model.currentPlayer == Player2 )
+                                , ( "title", True )
+                                ]
+                            ]
+                            [ text <| "Player2: " ++ toString (Tuple.second model.points) ]
+                        ]
+                    ]
+                , div [ class "columns" ]
+                    [ div [ class "column" ]
+                        [ table
+                            [ class tableClasses ]
+                            [ viewTableBody model
+                            ]
+                        ]
+                    ]
+                , div [ class "columns" ]
+                    [ div [ class "column model" ]
+                        [ text <| toString model
+                        ]
+                    ]
                 ]
             ]
 
@@ -81,9 +141,7 @@ viewTableCell model y x box =
             if x + 1 == width then
                 [ div
                     [ class "edge edge__v edge__v__last"
-                    , classList
-                        [ ( "edge__done edge__done__self", isLineSelected box.right model.selectedLines )
-                        ]
+                    , classList <| lineClasses box.right model.selectedLines
                     , onClick <| Select box.right
                     ]
                     []
@@ -98,9 +156,7 @@ viewTableCell model y x box =
             if y + 1 == height then
                 [ div
                     [ class "edge edge__h edge__h__last"
-                    , classList
-                        [ ( "edge__done edge__done__self", isLineSelected box.down model.selectedLines )
-                        ]
+                    , classList <| lineClasses box.down model.selectedLines
                     , onClick <| Select box.down
                     ]
                     []
@@ -123,17 +179,13 @@ viewTableCell model y x box =
         default =
             [ div
                 [ class "edge edge__h"
-                , classList
-                    [ ( "edge__done edge__done__self", isLineSelected box.up model.selectedLines )
-                    ]
+                , classList <| lineClasses box.up model.selectedLines
                 , onClick <| Select box.up
                 ]
                 []
             , div
                 [ class "edge edge__v"
-                , classList
-                    [ ( "edge__done edge__done__self", isLineSelected box.left model.selectedLines )
-                    ]
+                , classList <| lineClasses box.left model.selectedLines
                 , onClick <| Select box.left
                 ]
                 []
@@ -145,7 +197,9 @@ viewTableCell model y x box =
         td
             [ class "field-cell"
             , classList
-                [ ( "field-cell__done field-cell__done__self", box.done )
+                [ ( "field-cell__done", box.doneBy /= Nothing )
+                , ( "field-cell__done__self", box.doneBy == Just Player1 )
+                , ( "field-cell__done__rival", box.doneBy == Just Player2 )
                 ]
             ]
             [ div
@@ -154,201 +208,18 @@ viewTableCell model y x box =
             ]
 
 
-isLineSelected : Line -> SelectedLines -> Bool
-isLineSelected line selectedLines =
-    Dict.member line selectedLines
-
-
-
-{--
-        , table
-            [ class "field-table field-table__3 field-table__w3 field-table__h3" ]
-            [ tbody
+lineClasses : Line -> SelectedLines -> List ( String, Bool )
+lineClasses line selectedLines =
+    let
+        player =
+            Dict.get line selectedLines
+    in
+        case player of
+            Nothing ->
                 []
-                [ tr
-                    [ class "field-row" ]
-                    [ td
-                        [ class "field-cell" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h" ]
-                                []
-                            , div
-                                [ class "edge edge__v" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h" ]
-                                []
-                            , div
-                                [ class "edge edge__v" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h" ]
-                                []
-                            , div
-                                [ class "edge edge__v" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__v__last" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__r dot__t" ]
-                                []
-                            ]
-                        ]
-                    ]
-                , tr
-                    [ class "field-row" ]
-                    [ td
-                        [ class "field-cell" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h" ]
-                                []
-                            , div
-                                [ class "edge edge__v" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell field-cell__done field-cell__done__rival" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h edge__done edge__done__self" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__done edge__done__rival" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell field-cell__done field-cell__done__rival" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h edge__done edge__done__self" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__v__last edge__done edge__done__self" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__r dot__t" ]
-                                []
-                            ]
-                        ]
-                    ]
-                , tr
-                    [ class "field-row" ]
-                    [ td
-                        [ class "field-cell" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h" ]
-                                []
-                            , div
-                                [ class "edge edge__v" ]
-                                []
-                            , div
-                                [ class "edge edge__h edge__h__last" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__b" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell field-cell__done field-cell__done__rival" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__h edge__h__last edge__done edge__done__self" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__b" ]
-                                []
-                            ]
-                        ]
-                    , td
-                        [ class "field-cell field-cell__done field-cell__done__self" ]
-                        [ div
-                            [ class "edges" ]
-                            [ div
-                                [ class "edge edge__h edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__h edge__h__last edge__done edge__done__rival" ]
-                                []
-                            , div
-                                [ class "edge edge__v edge__v__last edge__done edge__done__self edge__done__last" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__l dot__b" ]
-                                []
-                            , span
-                                [ class "dot dot__r dot__t" ]
-                                []
-                            , span
-                                [ class "dot dot__r dot__b" ]
-                                []
-                            ]
-                        ]
-                    ]
+
+            Just player ->
+                [ ( "edge__done", True )
+                , ( "edge__done edge__done__self", player == Player1 )
+                , ( "edge__done edge__done__rival", player == Player2 )
                 ]
-            ]
-        ]
--}

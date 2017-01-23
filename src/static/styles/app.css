@@ -164,3 +164,11 @@ html {
 .edge__done__last-prepared.edge__v {
     height: 0
 }
+
+.player_active {
+  text-decoration: underline;
+}
+
+.model {
+  padding-top: 100px !important;
+}

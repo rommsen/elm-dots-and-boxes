@@ -7,6 +7,9 @@ type alias Model =
     { boxes : Boxes
     , selectedLines : SelectedLines
     , boardSize : BoardSize
+    , game : Game
+    , currentPlayer : Player
+    , points : ( Int, Int )
     }
 
 
@@ -31,7 +34,7 @@ type alias Box =
     , down : Line
     , left : Line
     , right : Line
-    , done : Bool
+    , doneBy : Maybe Player
     }
 
 
@@ -40,7 +43,18 @@ type BoardSize
 
 
 type alias SelectedLines =
-    Dict Line Bool
+    Dict Line Player
+
+
+type Game
+    = NotStarted
+    | Winner Player
+    | Process
+
+
+type Player
+    = Player1
+    | Player2
 
 
 type Msg

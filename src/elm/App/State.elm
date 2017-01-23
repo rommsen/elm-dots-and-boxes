@@ -9,6 +9,9 @@ initialModel =
     { boxes = []
     , selectedLines = Dict.empty
     , boardSize = BoardSize 3 3
+    , game = NotStarted
+    , currentPlayer = Player1
+    , points = ( 0, 0 )
     }
 
 
@@ -24,26 +27,43 @@ update msg model =
             let
                 boxes =
                     buildBoxes model.boardSize
-
-                _ =
-                    Debug.log "boxes" (toString boxes)
             in
-                ( { model | boxes = boxes }
+                ( { model | boxes = boxes, game = Process }
                 , Cmd.none
                 )
 
         Select line ->
             let
                 selectedLines =
-                    Dict.insert line True model.selectedLines
+                    Dict.insert line model.currentPlayer model.selectedLines
 
                 newBoxes =
-                    updateBoxes selectedLines model.boxes
+                    updateBoxes model.currentPlayer selectedLines model.boxes
 
-                _ =
-                    Debug.log "selectedLines" (toString selectedLines)
+                points =
+                    List.foldl
+                        (\box ( player1Points, player2Points ) ->
+                            case box.doneBy of
+                                Nothing ->
+                                    ( player1Points, player2Points )
+
+                                Just player ->
+                                    if player == Player1 then
+                                        ( player1Points + 1, player2Points )
+                                    else
+                                        ( player1Points, player2Points + 1 )
+                        )
+                        ( 0, 0 )
+                        newBoxes
+
+                newModel =
+                    { model
+                        | boxes = newBoxes
+                        , selectedLines = selectedLines
+                        , points = points
+                    }
             in
-                ( { model | boxes = newBoxes, selectedLines = selectedLines }, Cmd.none )
+                ( proceedGame newModel, Cmd.none )
 
 
 buildBoxes : BoardSize -> Boxes
@@ -76,24 +96,54 @@ buildBox x y =
         ( ( x + 1, y )
         , ( x + 1, y + 1 )
         )
-        False
+        Nothing
 
 
-updateBoxes : SelectedLines -> Boxes -> Boxes
-updateBoxes paths boxes =
-    List.map (updateBox paths) boxes
+updateBoxes : Player -> SelectedLines -> Boxes -> Boxes
+updateBoxes player paths boxes =
+    List.map (updateBox player paths) boxes
 
 
-updateBox : SelectedLines -> Box -> Box
-updateBox paths box =
-    let
-        done =
-            Dict.member box.up paths
-                && Dict.member box.down paths
-                && Dict.member box.left paths
-                && Dict.member box.right paths
-    in
-        { box | done = done }
+updateBox : Player -> SelectedLines -> Box -> Box
+updateBox player paths box =
+    case box.doneBy of
+        Just _ ->
+            box
+
+        Nothing ->
+            let
+                doneBy =
+                    if
+                        Dict.member box.up paths
+                            && Dict.member box.down paths
+                            && Dict.member box.left paths
+                            && Dict.member box.right paths
+                    then
+                        Just player
+                    else
+                        Nothing
+            in
+                { box | doneBy = doneBy }
+
+
+proceedGame : Model -> Model
+proceedGame model =
+    case model.game of
+        NotStarted ->
+            model
+
+        Winner player ->
+            model
+
+        Process ->
+            let
+                nextPlayer =
+                    if model.currentPlayer == Player1 then
+                        Player2
+                    else
+                        Player1
+            in
+                { model | currentPlayer = nextPlayer }
 
 
 
