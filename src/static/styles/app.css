@@ -1,16 +1,5 @@
 /* based on http://dots-game.org */
-html {
-    background: #fff;
-    min-height: 100%;
-    height: 100%
-}
 
-
-.field-table {
-    margin: 0 auto;
-    top: 5px;
-    position: relative
-}
 .field-table__2 .field-cell {
     width: 65px;
     height: 65px
@@ -69,10 +58,10 @@ html {
     transition: background-color .2s ease
 }
 .field-cell__done__self {
-    background: rgba(0, 0, 255, 0.25)
+    background: #00c4a7;
 }
 .field-cell__done__rival {
-    background: rgba(255, 0, 0, 0.25)
+    background: #ff2b56;
 }
 .dot {
     height: 10px;
@@ -133,10 +122,10 @@ html {
     z-index: 1
 }
 .edge__done__self {
-    background: blue!important
+    background: #00d1b2!important
 }
 .edge__done__rival {
-    background: red!important
+    background: #ff3860!important
 }
 .edge__done__last.edge__v {
     border-left: 4px double #fff;
