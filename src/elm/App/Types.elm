@@ -49,6 +49,7 @@ type alias SelectedLines =
 type Game
     = NotStarted
     | Winner Player
+    | Draw
     | Process
 
 

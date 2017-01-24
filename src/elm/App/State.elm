@@ -113,6 +113,9 @@ proceedGame model =
         Winner player ->
             model
 
+        Draw ->
+            model
+
         Process ->
             let
                 newPlayerPoints =
@@ -120,7 +123,7 @@ proceedGame model =
             in
                 if gameHasFinished model.boxes then
                     { model
-                        | game = Winner <| getWinner newPlayerPoints
+                        | game = getWinner newPlayerPoints
                         , playerPoints = newPlayerPoints
                     }
                 else if playerHasFinishedBox newPlayerPoints model.playerPoints then
@@ -162,12 +165,14 @@ playerHasFinishedBox newPoints oldPoints =
     newPoints /= oldPoints
 
 
-getWinner : PlayerPoints -> Player
+getWinner : PlayerPoints -> Game
 getWinner playerPoints =
     if Tuple.first playerPoints > Tuple.second playerPoints then
-        Player1
+        Winner Player1
+    else if Tuple.second playerPoints > Tuple.first playerPoints then
+        Winner Player2
     else
-        Player2
+        Draw
 
 
 switchPlayers : Player -> Player
