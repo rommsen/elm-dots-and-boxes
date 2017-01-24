@@ -9,7 +9,7 @@ type alias Model =
     , boardSize : BoardSize
     , game : Game
     , currentPlayer : Player
-    , points : ( Int, Int )
+    , playerPoints : PlayerPoints
     }
 
 
@@ -55,6 +55,10 @@ type Game
 type Player
     = Player1
     | Player2
+
+
+type alias PlayerPoints =
+    ( Int, Int )
 
 
 type Msg

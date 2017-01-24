@@ -15,7 +15,7 @@ viewHeader model =
             [ div [ class "container" ]
                 [ div [ class "nav" ]
                     [ div [ class "nav-left" ]
-                        [ span [ class "nav-item is-brand", onClick Start ]
+                        [ span [ class "nav-item is-brand" ]
                             [ text "Elm Dots and Boxes" ]
                         ]
                     ]
@@ -33,7 +33,13 @@ viewBody model =
                 [ div [ class "container" ]
                     [ div [ class "columns" ]
                         [ div [ class "column" ]
-                            []
+                            [ button
+                                [ class "button is-primary"
+                                , onClick Start
+                                ]
+                                [ text "Start Game"
+                                ]
+                            ]
                         ]
                     ]
                 ]
@@ -44,8 +50,12 @@ viewBody model =
                 [ div [ class "container" ]
                     [ div [ class "columns" ]
                         [ div [ class "column" ]
-                            []
+                            [ h1
+                                []
+                                [ text <| "Winner: " ++ toString player ]
+                            ]
                         ]
+                    , viewGameBoard model
                     ]
                 ]
 
@@ -55,6 +65,41 @@ viewBody model =
 
 viewGameInProcess : Model -> Html Msg
 viewGameInProcess model =
+    section
+        [ class "section" ]
+        [ div [ class "container" ]
+            [ div [ class "columns" ]
+                [ div [ class "column" ]
+                    [ h1
+                        [ classList
+                            [ ( "player_active", model.currentPlayer == Player1 )
+                            , ( "title", True )
+                            ]
+                        ]
+                        [ text <| "Player1: " ++ toString (Tuple.first model.playerPoints) ]
+                    ]
+                , div [ class "column" ]
+                    [ h1
+                        [ classList
+                            [ ( "player_active", model.currentPlayer == Player2 )
+                            , ( "title", True )
+                            ]
+                        ]
+                        [ text <| "Player2: " ++ toString (Tuple.second model.playerPoints) ]
+                    ]
+                ]
+            , viewGameBoard model
+            , div [ class "columns" ]
+                [ div [ class "column model" ]
+                    [ text <| toString model
+                    ]
+                ]
+            ]
+        ]
+
+
+viewGameBoard : Model -> Html Msg
+viewGameBoard model =
     let
         (BoardSize width height) =
             model.boardSize
@@ -70,41 +115,11 @@ viewGameInProcess model =
                 ++ " field-table__h"
                 ++ toString height
     in
-        section
-            [ class "section" ]
-            [ div [ class "container" ]
-                [ div [ class "columns" ]
-                    [ div [ class "column" ]
-                        [ h1
-                            [ classList
-                                [ ( "player_active", model.currentPlayer == Player1 )
-                                , ( "title", True )
-                                ]
-                            ]
-                            [ text <| "Player1: " ++ toString (Tuple.first model.points) ]
-                        ]
-                    , div [ class "column" ]
-                        [ h1
-                            [ classList
-                                [ ( "player_active", model.currentPlayer == Player2 )
-                                , ( "title", True )
-                                ]
-                            ]
-                            [ text <| "Player2: " ++ toString (Tuple.second model.points) ]
-                        ]
-                    ]
-                , div [ class "columns" ]
-                    [ div [ class "column" ]
-                        [ table
-                            [ class tableClasses ]
-                            [ viewTableBody model
-                            ]
-                        ]
-                    ]
-                , div [ class "columns" ]
-                    [ div [ class "column model" ]
-                        [ text <| toString model
-                        ]
+        div [ class "columns" ]
+            [ div [ class "column" ]
+                [ table
+                    [ class tableClasses ]
+                    [ viewTableBody model
                     ]
                 ]
             ]

@@ -8,10 +8,10 @@ initialModel : Model
 initialModel =
     { boxes = []
     , selectedLines = Dict.empty
-    , boardSize = BoardSize 3 3
+    , boardSize = BoardSize 2 2
     , game = NotStarted
     , currentPlayer = Player1
-    , points = ( 0, 0 )
+    , playerPoints = ( 0, 0 )
     }
 
 
@@ -40,7 +40,7 @@ update msg model =
                 newBoxes =
                     updateBoxes model.currentPlayer selectedLines model.boxes
 
-                points =
+                playerPoints =
                     List.foldl
                         (\box ( player1Points, player2Points ) ->
                             case box.doneBy of
@@ -60,10 +60,10 @@ update msg model =
                     { model
                         | boxes = newBoxes
                         , selectedLines = selectedLines
-                        , points = points
+                        , playerPoints = playerPoints
                     }
             in
-                ( proceedGame newModel, Cmd.none )
+                ( proceedGame model.playerPoints newModel, Cmd.none )
 
 
 buildBoxes : BoardSize -> Boxes
@@ -126,8 +126,8 @@ updateBox player paths box =
                 { box | doneBy = doneBy }
 
 
-proceedGame : Model -> Model
-proceedGame model =
+proceedGame : PlayerPoints -> Model -> Model
+proceedGame playerPoints model =
     case model.game of
         NotStarted ->
             model
@@ -136,14 +136,33 @@ proceedGame model =
             model
 
         Process ->
-            let
-                nextPlayer =
-                    if model.currentPlayer == Player1 then
-                        Player2
-                    else
-                        Player1
-            in
-                { model | currentPlayer = nextPlayer }
+            if gameHasFinished model.boxes then
+                { model | game = Winner <| getWinner model.playerPoints }
+            else if playerPoints /= model.playerPoints then
+                model
+            else
+                { model | currentPlayer = switchPlayers model.currentPlayer }
+
+
+gameHasFinished : Boxes -> Bool
+gameHasFinished boxes =
+    List.isEmpty <| List.filter (\box -> box.doneBy == Nothing) boxes
+
+
+getWinner : PlayerPoints -> Player
+getWinner playerPoints =
+    if Tuple.first playerPoints > Tuple.second playerPoints then
+        Player1
+    else
+        Player2
+
+
+switchPlayers : Player -> Player
+switchPlayers currentPlayer =
+    if currentPlayer == Player1 then
+        Player2
+    else
+        Player1
 
 
 
