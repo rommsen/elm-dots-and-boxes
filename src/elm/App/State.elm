@@ -33,20 +33,23 @@ update msg model =
                 )
 
         Select line ->
-            let
-                selectedLines =
-                    Dict.insert line model.currentPlayer model.selectedLines
+            if Dict.member line model.selectedLines then
+                ( model, Cmd.none )
+            else
+                let
+                    selectedLines =
+                        Dict.insert line model.currentPlayer model.selectedLines
 
-                newBoxes =
-                    updateBoxes model.currentPlayer selectedLines model.boxes
+                    newBoxes =
+                        updateBoxes model.currentPlayer selectedLines model.boxes
 
-                newModel =
-                    { model
-                        | boxes = newBoxes
-                        , selectedLines = selectedLines
-                    }
-            in
-                ( proceedGame newModel, Cmd.none )
+                    newModel =
+                        { model
+                            | boxes = newBoxes
+                            , selectedLines = selectedLines
+                        }
+                in
+                    ( proceedGame newModel, Cmd.none )
 
 
 buildBoxes : BoardSize -> Boxes

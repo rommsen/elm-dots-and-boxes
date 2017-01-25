@@ -45,34 +45,10 @@ viewBody model =
                 ]
 
         Winner player ->
-            section
-                [ class "section" ]
-                [ div [ class "container" ]
-                    [ div [ class "columns" ]
-                        [ div [ class "column" ]
-                            [ h1
-                                []
-                                [ text <| "Winner: " ++ toString player ]
-                            ]
-                        ]
-                    , viewGameBoard model
-                    ]
-                ]
+            viewGameInProcess model
 
         Draw ->
-            section
-                [ class "section" ]
-                [ div [ class "container" ]
-                    [ div [ class "columns" ]
-                        [ div [ class "column" ]
-                            [ h1
-                                []
-                                [ text "Draw" ]
-                            ]
-                        ]
-                    , viewGameBoard model
-                    ]
-                ]
+            viewGameInProcess model
 
         Process ->
             viewGameInProcess model
@@ -84,29 +60,59 @@ viewGameInProcess model =
         [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
-                [ div [ class "column" ]
-                    [ h1
-                        [ classList
-                            [ ( "player_active", model.currentPlayer == Player1 )
-                            , ( "title", True )
-                            ]
-                        ]
-                        [ text <| "Player1: " ++ toString (Tuple.first model.playerPoints) ]
-                    ]
-                , div [ class "column" ]
-                    [ h1
-                        [ classList
-                            [ ( "player_active", model.currentPlayer == Player2 )
-                            , ( "title", True )
-                            ]
-                        ]
-                        [ text <| "Player2: " ++ toString (Tuple.second model.playerPoints) ]
-                    ]
+                [ viewGameBoard model
+                , viewGameStats model
                 ]
-            , viewGameBoard model
             , div [ class "columns" ]
                 [ div [ class "column model" ]
                     [ text <| toString model
+                    ]
+                ]
+            ]
+        ]
+
+
+viewGameStats : Model -> Html Msg
+viewGameStats model =
+    div [ class "column" ]
+        [ div [ class "box" ]
+            [ table
+                [ class "table is-striped is-narrow" ]
+                [ thead
+                    []
+                    [ tr
+                        []
+                        [ th
+                            [ colspan 2 ]
+                            [ model.game
+                                |> toString
+                                |> text
+                            ]
+                        ]
+                    ]
+                , tbody
+                    []
+                    [ tr
+                        []
+                        [ td
+                            []
+                            [ text "Turn" ]
+                        , td
+                            []
+                            [ text <| toString model.currentPlayer ]
+                        ]
+                    , tr
+                        []
+                        [ td
+                            []
+                            [ text "Points" ]
+                        , td
+                            []
+                            [ model.playerPoints
+                                |> toString
+                                |> text
+                            ]
+                        ]
                     ]
                 ]
             ]
@@ -130,8 +136,8 @@ viewGameBoard model =
                 ++ " field-table__h"
                 ++ toString height
     in
-        div [ class "columns" ]
-            [ div [ class "column" ]
+        div [ class "column is-10" ]
+            [ div [ class "box" ]
                 [ table
                     [ class tableClasses ]
                     [ viewTableBody model
