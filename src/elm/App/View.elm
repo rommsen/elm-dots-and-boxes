@@ -26,7 +26,7 @@ viewHeader model =
 
 viewBody : Model -> Html Msg
 viewBody model =
-    case model.game of
+    case model.gameStatus of
         NotStarted ->
             section
                 [ class "section" ]
@@ -35,7 +35,7 @@ viewBody model =
                         [ div [ class "column" ]
                             [ button
                                 [ class "button is-primary"
-                                , onClick Start
+                                , onClick StartGame
                                 ]
                                 [ text "Start Game"
                                 ]
@@ -84,7 +84,7 @@ viewGameStats model =
                         []
                         [ th
                             [ colspan 2 ]
-                            [ model.game
+                            [ model.gameStatus
                                 |> toString
                                 |> text
                             ]

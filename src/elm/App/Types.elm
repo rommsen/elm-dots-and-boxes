@@ -1,6 +1,7 @@
 module App.Types exposing (..)
 
 import Dict exposing (Dict)
+import Json.Decode as JD
 
 
 type alias Model =
@@ -8,6 +9,7 @@ type alias Model =
     , selectedLines : SelectedLines
     , boardSize : BoardSize
     , game : Game
+    , gameStatus : GameStatus
     , currentPlayer : Player
     , playerPoints : PlayerPoints
     }
@@ -46,7 +48,18 @@ type alias SelectedLines =
     Dict Line Player
 
 
-type Game
+type alias Game =
+    { id : String
+    , playerNames : List String
+    , boxes : Boxes
+    , selectedLines : SelectedLines
+    , status : GameStatus
+    , currentPlayer : Player
+    , playerPoints : PlayerPoints
+    }
+
+
+type GameStatus
     = NotStarted
     | Winner Player
     | Draw
@@ -63,5 +76,6 @@ type alias PlayerPoints =
 
 
 type Msg
-    = Start
+    = StartGame
+    | GameStarted JD.Value
     | Select Line
