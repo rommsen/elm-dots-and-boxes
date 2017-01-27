@@ -10,13 +10,8 @@ import Exts.Json.Encode as EJE
 
 initialModel : Model
 initialModel =
-    { boxes = []
-    , selectedLines = selectedLinesDummy
-    , boardSize = BoardSize 2 2
+    { boardSize = BoardSize 2 2
     , game = gameDummy
-    , gameStatus = NotStarted
-    , currentPlayer = Player1
-    , playerPoints = ( 0, 0 )
     }
 
 
@@ -25,18 +20,11 @@ gameDummy =
     { id = ""
     , playerNames = [ "Roman", "Lena" ]
     , boxes = buildBoxes <| BoardSize 2 2
-    , selectedLines = selectedLinesDummy
+    , selectedLines = Dict.empty
     , status = NotStarted
     , currentPlayer = Player1
     , playerPoints = ( 0, 0 )
     }
-
-
-selectedLinesDummy : SelectedLines
-selectedLinesDummy =
-    Dict.empty
-        |> Dict.insert ( ( 0, 0 ), ( 0, 1 ) ) Player1
-        |> Dict.insert ( ( 0, 1 ), ( 1, 1 ) ) Player2
 
 
 init : ( Model, Cmd Msg )
@@ -78,13 +66,7 @@ update msg model =
         GameStarted value ->
             case JD.decodeValue gameDecoder value of
                 Ok game ->
-                    ( { model
-                        | boxes = game.boxes
-                        , game = game
-                        , gameStatus = Process
-                      }
-                    , Cmd.none
-                    )
+                    ( { model | game = game }, Cmd.none )
 
                 Err err ->
                     let
@@ -94,23 +76,39 @@ update msg model =
                         ( model, Cmd.none )
 
         Select line ->
-            if Dict.member line model.selectedLines then
+            if Dict.member line model.game.selectedLines then
                 ( model, Cmd.none )
             else
                 let
+                    game =
+                        model.game
+
                     selectedLines =
-                        Dict.insert line model.currentPlayer model.selectedLines
+                        Dict.insert line game.currentPlayer game.selectedLines
 
                     newBoxes =
-                        updateBoxes model.currentPlayer selectedLines model.boxes
+                        updateBoxes game.currentPlayer selectedLines game.boxes
 
-                    newModel =
-                        { model
-                            | boxes = newBoxes
-                            , selectedLines = selectedLines
-                        }
+                    newGame =
+                        proceedGame
+                            { game
+                                | boxes = newBoxes
+                                , selectedLines = selectedLines
+                            }
                 in
-                    ( proceedGame newModel, Cmd.none )
+                    ( model, changeGame <| gameEncoder newGame )
+
+        GameChanged value ->
+            case JD.decodeValue gameDecoder value of
+                Ok game ->
+                    ( { model | game = game }, Cmd.none )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.crash err
+                    in
+                        ( model, Cmd.none )
 
 
 buildBoxes : BoardSize -> Boxes
@@ -168,35 +166,35 @@ updateBox player selectedLines box =
                 { box | doneBy = doneBy }
 
 
-proceedGame : Model -> Model
-proceedGame model =
-    case model.gameStatus of
+proceedGame : Game -> Game
+proceedGame game =
+    case game.status of
         NotStarted ->
-            model
+            game
 
         Winner player ->
-            model
+            game
 
         Draw ->
-            model
+            game
 
         Process ->
             let
                 newPlayerPoints =
-                    calculatePlayerPoints model.boxes
+                    calculatePlayerPoints game.boxes
             in
-                if gameHasFinished model.boxes then
-                    { model
-                        | gameStatus = getWinner newPlayerPoints
+                if gameHasFinished game.boxes then
+                    { game
+                        | status = getWinner newPlayerPoints
                         , playerPoints = newPlayerPoints
                     }
-                else if playerHasFinishedBox newPlayerPoints model.playerPoints then
-                    { model
+                else if playerHasFinishedBox newPlayerPoints game.playerPoints then
+                    { game
                         | playerPoints = newPlayerPoints
                     }
                 else
-                    { model
-                        | currentPlayer = switchPlayers model.currentPlayer
+                    { game
+                        | currentPlayer = switchPlayers game.currentPlayer
                         , playerPoints = newPlayerPoints
                     }
 
@@ -261,7 +259,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.required "id" JD.string
         |> Json.Decode.Pipeline.required "playerNames" (JD.list JD.string)
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
-        |> Json.Decode.Pipeline.required "selectedLines" selectedLinesDecoder
+        |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
         |> Json.Decode.Pipeline.required "currentPlayer" playerDecoder
         |> Json.Decode.Pipeline.required "playerPoints" playerPointsDecoder
@@ -423,10 +421,17 @@ subscriptions : Sub Msg
 subscriptions =
     Sub.batch
         [ gameStarted GameStarted
+        , gameChanged GameChanged
         ]
 
 
 port startGame : JE.Value -> Cmd msg
 
 
+port changeGame : JE.Value -> Cmd msg
+
+
 port gameStarted : (JD.Value -> msg) -> Sub msg
+
+
+port gameChanged : (JD.Value -> msg) -> Sub msg

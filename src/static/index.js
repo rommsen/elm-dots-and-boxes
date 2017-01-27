@@ -23,6 +23,14 @@ app.ports.startGame.subscribe(game => {
         });
 });
 
+app.ports.changeGame.subscribe(game => {
+    console.log(game)
+    games.update(game)
+        .catch(err => {
+            console.error("changeGame error:", err);
+        });
+});
+
 
 games.ref.on("child_added", data => {
     const game = Object.assign({}, data.val(), {
@@ -32,9 +40,11 @@ games.ref.on("child_added", data => {
     console.log(game);
     app.ports.gameStarted.send(game);
 });
-// members.ref.on("child_changed", data => {
-//     const member = Object.assign({}, data.val(), {
-//         id: data.key
-//     });
-//     app.ports.memberUpdated.send(member);
-// });
+
+
+games.ref.on("child_changed", data => {
+    const game = Object.assign({}, data.val(), {
+        id: data.key
+    });
+    app.ports.gameChanged.send(game);
+});

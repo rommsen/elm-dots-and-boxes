@@ -5,13 +5,8 @@ import Json.Decode as JD
 
 
 type alias Model =
-    { boxes : Boxes
-    , selectedLines : SelectedLines
-    , boardSize : BoardSize
+    { boardSize : BoardSize
     , game : Game
-    , gameStatus : GameStatus
-    , currentPlayer : Player
-    , playerPoints : PlayerPoints
     }
 
 
@@ -78,4 +73,5 @@ type alias PlayerPoints =
 type Msg
     = StartGame
     | GameStarted JD.Value
+    | GameChanged JD.Value
     | Select Line

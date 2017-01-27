@@ -19,11 +19,11 @@ export const games = {
             .push(game);
     },
 
-    // update: member => {
-    //     return database
-    //         .ref(GAMES_REFPATH + "/" + member.id)
-    //         .set(member);
-    // },
+    update: game => {
+        return database
+            .ref(GAMES_REFPATH + "/" + game.id)
+            .set(game);
+    },
 
     ref: database.ref(GAMES_REFPATH)
 }

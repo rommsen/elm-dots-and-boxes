@@ -26,7 +26,7 @@ viewHeader model =
 
 viewBody : Model -> Html Msg
 viewBody model =
-    case model.gameStatus of
+    case model.game.status of
         NotStarted ->
             section
                 [ class "section" ]
@@ -84,7 +84,7 @@ viewGameStats model =
                         []
                         [ th
                             [ colspan 2 ]
-                            [ model.gameStatus
+                            [ model.game.status
                                 |> toString
                                 |> text
                             ]
@@ -99,7 +99,7 @@ viewGameStats model =
                             [ text "Turn" ]
                         , td
                             []
-                            [ text <| toString model.currentPlayer ]
+                            [ text <| toString model.game.currentPlayer ]
                         ]
                     , tr
                         []
@@ -108,7 +108,7 @@ viewGameStats model =
                             [ text "Points" ]
                         , td
                             []
-                            [ model.playerPoints
+                            [ model.game.playerPoints
                                 |> toString
                                 |> text
                             ]
@@ -153,7 +153,7 @@ viewTableBody model =
             model.boardSize
 
         grid =
-            List.Extra.groupsOf width model.boxes
+            List.Extra.groupsOf width model.game.boxes
     in
         tbody
             []
@@ -177,7 +177,7 @@ viewTableCell model y x box =
             if x + 1 == width then
                 [ div
                     [ class "edge edge__v edge__v__last"
-                    , classList <| lineClasses box.right model.selectedLines
+                    , classList <| lineClasses box.right model.game.selectedLines
                     , onClick <| Select box.right
                     ]
                     []
@@ -192,7 +192,7 @@ viewTableCell model y x box =
             if y + 1 == height then
                 [ div
                     [ class "edge edge__h edge__h__last"
-                    , classList <| lineClasses box.down model.selectedLines
+                    , classList <| lineClasses box.down model.game.selectedLines
                     , onClick <| Select box.down
                     ]
                     []
@@ -215,13 +215,13 @@ viewTableCell model y x box =
         default =
             [ div
                 [ class "edge edge__h"
-                , classList <| lineClasses box.up model.selectedLines
+                , classList <| lineClasses box.up model.game.selectedLines
                 , onClick <| Select box.up
                 ]
                 []
             , div
                 [ class "edge edge__v"
-                , classList <| lineClasses box.left model.selectedLines
+                , classList <| lineClasses box.left model.game.selectedLines
                 , onClick <| Select box.left
                 ]
                 []
