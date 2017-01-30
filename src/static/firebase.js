@@ -13,7 +13,7 @@ const database = app.database();
 const GAMES_REFPATH = "games";
 
 export const games = {
-    start: game => {
+    open: game => {
         return database
             .ref(GAMES_REFPATH)
             .push(game);

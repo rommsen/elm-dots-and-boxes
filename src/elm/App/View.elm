@@ -4,8 +4,10 @@ import App.Types exposing (..)
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onSubmit, onInput)
 import List.Extra
+import Form.Validation exposing (..)
+import FormElements exposing (wrapFormElement)
 
 
 viewHeader : Model -> Html Msg
@@ -26,158 +28,228 @@ viewHeader model =
 
 viewBody : Model -> Html Msg
 viewBody model =
-    case model.game.status of
-        NotStarted ->
-            section
-                [ class "section" ]
-                [ div [ class "container" ]
-                    [ div [ class "columns" ]
-                        [ div [ class "column" ]
-                            [ button
-                                [ class "button is-primary"
-                                , onClick StartGame
-                                ]
-                                [ text "Start Game"
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+    case model.game of
+        Nothing ->
+            viewLobby model
 
-        Winner player ->
-            viewGameInProcess model
-
-        Draw ->
-            viewGameInProcess model
-
-        Process ->
-            viewGameInProcess model
+        Just game ->
+            viewGame game
 
 
-viewGameInProcess : Model -> Html Msg
-viewGameInProcess model =
+viewLobby : Model -> Html Msg
+viewLobby model =
     section
         [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
-                [ viewGameBoard model
-                , viewGameStats model
+                [ div [ class "column" ]
+                    [ viewGameForm model.gameForm
+                    ]
+                ]
+            ]
+        ]
+
+
+viewGameForm : GameForm -> Html Msg
+viewGameForm form =
+    let
+        widthError =
+            findError "width" form.errors
+
+        heightError =
+            findError "height" form.errors
+
+        widthInput =
+            wrapFormElement "Width" widthError <|
+                input
+                    [ type_ "text"
+                    , classList
+                        [ ( "input", True )
+                        , ( "is-danger", widthError /= Nothing )
+                        ]
+                    , onInput InputWidth
+                    , placeholder "Width"
+                    , value form.width
+                    ]
+                    []
+
+        heightInput =
+            wrapFormElement "Height" heightError <|
+                input
+                    [ type_ "text"
+                    , classList
+                        [ ( "input", True )
+                        , ( "is-danger", heightError /= Nothing )
+                        ]
+                    , onInput InputHeight
+                    , placeholder "Height"
+                    , value form.height
+                    ]
+                    []
+
+        submitButton =
+            button
+                [ type_ "submit"
+                , class "button is-primary"
+                ]
+                [ text "Open Game" ]
+    in
+        Html.form [ onSubmit OpenGame ]
+            [ widthInput
+            , heightInput
+            , div [ class "control is-grouped" ]
+                [ submitButton
+                ]
+            ]
+
+
+viewGame : Game -> Html Msg
+viewGame game =
+    case game.status of
+        Open ->
+            viewGameInProcess game
+
+        Winner player ->
+            viewGameInProcess game
+
+        Draw ->
+            viewGameInProcess game
+
+        Running ->
+            viewGameInProcess game
+
+
+viewGameInProcess : Game -> Html Msg
+viewGameInProcess game =
+    section
+        [ class "section" ]
+        [ div [ class "container" ]
+            [ div [ class "columns" ]
+                [ viewGameBoard game
+                , viewGameStats game
                 ]
             , div [ class "columns" ]
                 [ div [ class "column model" ]
-                    [ text <| toString model
+                    [ text <| toString game
                     ]
                 ]
             ]
         ]
 
 
-viewGameStats : Model -> Html Msg
-viewGameStats model =
-    div [ class "column" ]
-        [ div [ class "box" ]
-            [ table
-                [ class "table is-striped is-narrow" ]
-                [ thead
-                    []
-                    [ tr
-                        []
-                        [ th
-                            [ colspan 2 ]
-                            [ model.game.status
-                                |> toString
-                                |> text
-                            ]
-                        ]
-                    ]
-                , tbody
-                    []
-                    [ tr
-                        []
-                        [ td
-                            []
-                            [ text "Turn" ]
-                        , td
-                            []
-                            [ text <| toString model.game.currentPlayer ]
-                        ]
-                    , tr
-                        []
-                        [ td
-                            []
-                            [ text "Points" ]
-                        , td
-                            []
-                            [ model.game.playerPoints
-                                |> toString
-                                |> text
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
-
-
-viewGameBoard : Model -> Html Msg
-viewGameBoard model =
+viewGameStats : Game -> Html Msg
+viewGameStats game =
     let
-        (BoardSize width height) =
-            model.boardSize
+        startButton =
+            if game.status == Open then
+                button
+                    [ class "button is-primary"
+                    , onClick StartGame
+                    ]
+                    [ text "Start Game"
+                    ]
+            else
+                text ""
+    in
+        div [ class "column" ]
+            [ div [ class "box" ]
+                [ table
+                    [ class "table is-striped is-narrow" ]
+                    [ thead
+                        []
+                        [ tr
+                            []
+                            [ th
+                                []
+                                [ game.status
+                                    |> toString
+                                    |> text
+                                ]
+                            , th
+                                []
+                                [ startButton
+                                ]
+                            ]
+                        ]
+                    , tbody
+                        []
+                        [ tr
+                            []
+                            [ td
+                                []
+                                [ text "Turn" ]
+                            , td
+                                []
+                                [ text <| toString game.currentPlayer ]
+                            ]
+                        , tr
+                            []
+                            [ td
+                                []
+                                [ text "Points" ]
+                            , td
+                                []
+                                [ game.playerPoints
+                                    |> toString
+                                    |> text
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
 
+
+viewGameBoard : Game -> Html Msg
+viewGameBoard game =
+    let
         tableClasses =
             "field-table"
                 ++ " field-table__"
-                ++ toString width
+                ++ toString game.boardSize.width
                 ++ " field-table__w"
-                ++ toString width
+                ++ toString game.boardSize.width
                 ++ " field-table__"
-                ++ toString height
+                ++ toString game.boardSize.height
                 ++ " field-table__h"
-                ++ toString height
+                ++ toString game.boardSize.height
     in
         div [ class "column is-10" ]
             [ div [ class "box" ]
                 [ table
                     [ class tableClasses ]
-                    [ viewTableBody model
+                    [ viewTableBody game
                     ]
                 ]
             ]
 
 
-viewTableBody : Model -> Html Msg
-viewTableBody model =
+viewTableBody : Game -> Html Msg
+viewTableBody game =
     let
-        (BoardSize width height) =
-            model.boardSize
-
         grid =
-            List.Extra.groupsOf width model.game.boxes
+            List.Extra.groupsOf game.boardSize.width game.boxes
     in
         tbody
             []
-            (List.indexedMap (viewTableRows model) grid)
+            (List.indexedMap (viewTableRows game) grid)
 
 
-viewTableRows : Model -> Int -> List Box -> Html Msg
-viewTableRows model y boxes =
+viewTableRows : Game -> Int -> List Box -> Html Msg
+viewTableRows game y boxes =
     tr
         [ class "field-row" ]
-        (List.indexedMap (viewTableCell model y) boxes)
+        (List.indexedMap (viewTableCell game y) boxes)
 
 
-viewTableCell : Model -> Int -> Int -> Box -> Html Msg
-viewTableCell model y x box =
+viewTableCell : Game -> Int -> Int -> Box -> Html Msg
+viewTableCell game y x box =
     let
-        (BoardSize width height) =
-            model.boardSize
-
         lastOnX =
-            if x + 1 == width then
+            if x + 1 == game.boardSize.width then
                 [ div
                     [ class "edge edge__v edge__v__last"
-                    , classList <| lineClasses box.right model.game.selectedLines
+                    , classList <| lineClasses box.right game.selectedLines
                     , onClick <| Select box.right
                     ]
                     []
@@ -189,10 +261,10 @@ viewTableCell model y x box =
                 []
 
         lastOnY =
-            if y + 1 == height then
+            if y + 1 == game.boardSize.height then
                 [ div
                     [ class "edge edge__h edge__h__last"
-                    , classList <| lineClasses box.down model.game.selectedLines
+                    , classList <| lineClasses box.down game.selectedLines
                     , onClick <| Select box.down
                     ]
                     []
@@ -204,7 +276,7 @@ viewTableCell model y x box =
                 []
 
         last =
-            if x + 1 == width && y + 1 == height then
+            if x + 1 == game.boardSize.width && y + 1 == game.boardSize.height then
                 [ span
                     [ class "dot dot__r dot__b" ]
                     []
@@ -215,13 +287,13 @@ viewTableCell model y x box =
         default =
             [ div
                 [ class "edge edge__h"
-                , classList <| lineClasses box.up model.game.selectedLines
+                , classList <| lineClasses box.up game.selectedLines
                 , onClick <| Select box.up
                 ]
                 []
             , div
                 [ class "edge edge__v"
-                , classList <| lineClasses box.left model.game.selectedLines
+                , classList <| lineClasses box.left game.selectedLines
                 , onClick <| Select box.left
                 ]
                 []

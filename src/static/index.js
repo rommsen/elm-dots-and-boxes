@@ -12,11 +12,10 @@ const app = Elm.Main.embed(document.getElementById('main'));
 
 let gameId;
 
-app.ports.startGame.subscribe(game => {
-    console.log(game)
-    games.start(game)
+app.ports.openGame.subscribe(game => {
+    games.open(game)
         .then(function(val) {
-            console.log(val.key)
+            app.ports.gameOpened.send(val.key);
         })
         .catch(err => {
             console.error("startGame error:", err);
@@ -38,7 +37,7 @@ games.ref.on("child_added", data => {
     });
     gameId = data.key;
     console.log(game);
-    app.ports.gameStarted.send(game);
+    // app.ports.gameStarted.send(game);
 });
 
 

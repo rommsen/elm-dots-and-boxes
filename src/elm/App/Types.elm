@@ -2,12 +2,20 @@ module App.Types exposing (..)
 
 import Dict exposing (Dict)
 import Json.Decode as JD
+import Form.Validation exposing (..)
 
 
 type alias Model =
-    { boardSize : BoardSize
-    , game : Game
+    { game : Maybe Game
+    , playerName : String
+    , gameForm : GameForm
     }
+
+
+
+-- , currentGameId : Maybe
+-- , playerInCurrentGame : Maybe Player
+-- game sollte wohl Maybe sein
 
 
 type alias Boxes =
@@ -35,8 +43,36 @@ type alias Box =
     }
 
 
-type BoardSize
-    = BoardSize Int Int
+type alias BoardSize =
+    { width : Int
+    , height : Int
+    }
+
+
+
+{-
+
+   Ich muss unterscheiden zwischen: Spiel wurde erstellt und gestartet.
+   Bei einem erstellten Spiel können sich noch andere Leute verbinden.
+
+
+   Man eröffnet ein Spiel, damit hört man nur noch auf Änderungen an diesem Spiel
+
+   Wenn man teilnimmt ebenso
+
+-}
+
+
+type alias GameForm =
+    { width : String
+    , height : String
+    , errors : List Error
+    }
+
+
+defaultGameForm : GameForm
+defaultGameForm =
+    GameForm "3" "3" []
 
 
 type alias SelectedLines =
@@ -46,6 +82,7 @@ type alias SelectedLines =
 type alias Game =
     { id : String
     , playerNames : List String
+    , boardSize : BoardSize
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
@@ -54,11 +91,15 @@ type alias Game =
     }
 
 
+type alias GameId =
+    String
+
+
 type GameStatus
-    = NotStarted
+    = Open
+    | Running
     | Winner Player
     | Draw
-    | Process
 
 
 type Player
@@ -71,7 +112,11 @@ type alias PlayerPoints =
 
 
 type Msg
-    = StartGame
-    | GameStarted JD.Value
+    = OpenGame
+    | StartGame
+    | JoinGame GameId
+    | GameOpened String
     | GameChanged JD.Value
     | Select Line
+    | InputWidth String
+    | InputHeight String
