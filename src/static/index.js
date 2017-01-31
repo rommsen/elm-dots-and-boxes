@@ -4,7 +4,8 @@ import "./styles/bulma.css";
 import "font-awesome-webpack";
 
 import {
-    games
+    games,
+    players
 } from "./firebase";
 
 const Elm = require('../elm/Main');
@@ -27,6 +28,19 @@ app.ports.changeGame.subscribe(game => {
     games.update(game)
         .catch(err => {
             console.error("changeGame error:", err);
+        });
+});
+
+app.ports.registerPlayer.subscribe(player => {
+    players.register(player)
+        .then(function(val) {
+            app.ports.playerRegistered.send({
+                id: val.key,
+                name: player.name
+            });
+        })
+        .catch(err => {
+            console.error("startGame error:", err);
         });
 });
 

@@ -7,8 +7,9 @@ import Form.Validation exposing (..)
 
 type alias Model =
     { game : Maybe Game
-    , playerName : String
     , gameForm : GameForm
+    , currentPlayer : Maybe CurrentPlayer
+    , currentPlayerForm : CurrentPlayerForm
     }
 
 
@@ -16,6 +17,12 @@ type alias Model =
 -- , currentGameId : Maybe
 -- , playerInCurrentGame : Maybe Player
 -- game sollte wohl Maybe sein
+
+
+type alias CurrentPlayer =
+    { id : String
+    , name : String
+    }
 
 
 type alias Boxes =
@@ -61,6 +68,17 @@ type alias BoardSize =
    Wenn man teilnimmt ebenso
 
 -}
+
+
+type alias CurrentPlayerForm =
+    { name : String
+    , errors : List Error
+    }
+
+
+defaultCurrentPlayerForm : CurrentPlayerForm
+defaultCurrentPlayerForm =
+    CurrentPlayerForm "" []
 
 
 type alias GameForm =
@@ -112,7 +130,10 @@ type alias PlayerPoints =
 
 
 type Msg
-    = OpenGame
+    = RegisterCurrentPlayer
+    | InputCurrentPlayerName String
+    | CurrentPlayerRegistered CurrentPlayer
+    | OpenGame
     | StartGame
     | JoinGame GameId
     | GameOpened String

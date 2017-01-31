@@ -11,13 +11,10 @@ import App.Rest exposing (..)
 initialModel : Model
 initialModel =
     { game = Nothing
-    , playerName = ""
     , gameForm = defaultGameForm
+    , currentPlayer = Nothing
+    , currentPlayerForm = defaultCurrentPlayerForm
     }
-
-
-
--- , playerInCurrentGame = Nothing
 
 
 init : ( Model, Cmd Msg )
@@ -28,18 +25,52 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        RegisterCurrentPlayer ->
+            let
+                form =
+                    model.currentPlayerForm
+
+                currentPlayerForm =
+                    { form | errors = validateCurrentPlayerForm form }
+
+                newModel =
+                    { model | currentPlayerForm = currentPlayerForm }
+            in
+                case extractCurrentPlayerFromForm currentPlayerForm of
+                    Just player ->
+                        ( newModel, registerPlayer player )
+
+                    Nothing ->
+                        ( newModel, Cmd.none )
+
+        CurrentPlayerRegistered currentPlayer ->
+            ( { model | currentPlayer = Just currentPlayer }, Cmd.none )
+
+        InputCurrentPlayerName name ->
+            let
+                form =
+                    model.currentPlayerForm
+
+                newForm =
+                    { form
+                        | name = name
+                        , errors = validateCurrentPlayerForm form
+                    }
+            in
+                ( { model | currentPlayerForm = newForm }, Cmd.none )
+
         InputWidth width ->
             let
                 form =
                     model.gameForm
 
-                newGameForm =
+                newForm =
                     { form
                         | width = width
                         , errors = validateGameForm form
                     }
             in
-                ( { model | gameForm = newGameForm }, Cmd.none )
+                ( { model | gameForm = newForm }, Cmd.none )
 
         InputHeight height ->
             let
@@ -319,6 +350,19 @@ extractBoardSizeFromForm form =
         |> Result.toMaybe
 
 
+validateCurrentPlayerForm : CurrentPlayerForm -> List Error
+validateCurrentPlayerForm form =
+    begin form
+        |> validate (validateNotBlank "name" << .name)
+        |> extractErrors
+
+
+extractCurrentPlayerFromForm : CurrentPlayerForm -> Maybe CurrentPlayer
+extractCurrentPlayerFromForm form =
+    Result.map (CurrentPlayer "") (stringNotBlankResult form.name)
+        |> Result.toMaybe
+
+
 
 -- SUBSCRIPTIONS
 
@@ -328,6 +372,7 @@ subscriptions =
     Sub.batch
         [ gameOpened GameOpened
         , gameChanged GameChanged
+        , playerRegistered CurrentPlayerRegistered
         ]
 
 
@@ -341,3 +386,9 @@ port gameOpened : (String -> msg) -> Sub msg
 
 
 port gameChanged : (JD.Value -> msg) -> Sub msg
+
+
+port registerPlayer : CurrentPlayer -> Cmd msg
+
+
+port playerRegistered : (CurrentPlayer -> msg) -> Sub msg

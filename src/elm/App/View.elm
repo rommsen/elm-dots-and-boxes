@@ -43,11 +43,56 @@ viewLobby model =
         [ div [ class "container" ]
             [ div [ class "columns" ]
                 [ div [ class "column" ]
-                    [ viewGameForm model.gameForm
+                    [ viewLobbyBody model
                     ]
                 ]
             ]
         ]
+
+
+viewLobbyBody : Model -> Html Msg
+viewLobbyBody model =
+    case model.currentPlayer of
+        Nothing ->
+            viewPlayerForm model.currentPlayerForm
+
+        Just player ->
+            viewGameForm model.gameForm
+
+
+viewPlayerForm : CurrentPlayerForm -> Html Msg
+viewPlayerForm form =
+    let
+        nameError =
+            findError "name" form.errors
+
+        nameInput =
+            wrapFormElement "Hey, whats your name?" nameError <|
+                input
+                    [ type_ "text"
+                    , classList
+                        [ ( "input", True )
+                        , ( "is-danger", nameError /= Nothing )
+                        ]
+                    , onInput InputCurrentPlayerName
+                    , placeholder "Name"
+                    , value form.name
+                    ]
+                    []
+
+        submitButton =
+            button
+                [ type_ "submit"
+                , class "button is-primary"
+                ]
+                [ text <| "Let's go " ++ form.name ]
+    in
+        Html.form [ onSubmit RegisterCurrentPlayer ]
+            [ nameInput
+            , div [ class "control is-grouped" ]
+                [ submitButton
+                ]
+            ]
 
 
 viewGameForm : GameForm -> Html Msg
