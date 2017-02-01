@@ -13,7 +13,8 @@ initialModel =
     { game = Nothing
     , gameForm = defaultGameForm
     , currentPlayer = Nothing
-    , currentPlayerForm = defaultCurrentPlayerForm
+    , playerForm = defaultPlayerForm
+    , openGames = []
     }
 
 
@@ -28,15 +29,15 @@ update msg model =
         RegisterCurrentPlayer ->
             let
                 form =
-                    model.currentPlayerForm
+                    model.playerForm
 
-                currentPlayerForm =
-                    { form | errors = validateCurrentPlayerForm form }
+                playerForm =
+                    { form | errors = validatePlayerForm form }
 
                 newModel =
-                    { model | currentPlayerForm = currentPlayerForm }
+                    { model | playerForm = playerForm }
             in
-                case extractCurrentPlayerFromForm currentPlayerForm of
+                case extractPlayerFromForm playerForm of
                     Just player ->
                         ( newModel, registerPlayer player )
 
@@ -46,18 +47,18 @@ update msg model =
         CurrentPlayerRegistered currentPlayer ->
             ( { model | currentPlayer = Just currentPlayer }, Cmd.none )
 
-        InputCurrentPlayerName name ->
+        InputPlayerName name ->
             let
                 form =
-                    model.currentPlayerForm
+                    model.playerForm
 
                 newForm =
                     { form
                         | name = name
-                        , errors = validateCurrentPlayerForm form
+                        , errors = validatePlayerForm form
                     }
             in
-                ( { model | currentPlayerForm = newForm }, Cmd.none )
+                ( { model | playerForm = newForm }, Cmd.none )
 
         InputWidth width ->
             let
@@ -175,6 +176,18 @@ update msg model =
                     in
                         ( { model | game = Just newGame }, Cmd.none )
 
+        OpenGameAdded value ->
+            case JD.decodeValue gameDecoder value of
+                Ok openGame ->
+                    ( { model | openGames = openGame :: model.openGames }, Cmd.none )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.crash err
+                    in
+                        ( model, Cmd.none )
+
         JoinGame gameId ->
             ( model, Cmd.none )
 
@@ -190,6 +203,10 @@ buildGame boardSize =
     , currentPlayer = Player1
     , playerPoints = ( 0, 0 )
     }
+
+
+
+-- , players = Dict.singleton playerId (PlayerInGame player Player1)
 
 
 buildBoxes : BoardSize -> Boxes
@@ -225,12 +242,12 @@ buildBox x y =
         Nothing
 
 
-updateBoxes : Player -> SelectedLines -> Boxes -> Boxes
+updateBoxes : PlayerStatus -> SelectedLines -> Boxes -> Boxes
 updateBoxes player paths boxes =
     List.map (updateBox player paths) boxes
 
 
-updateBox : Player -> SelectedLines -> Box -> Box
+updateBox : PlayerStatus -> SelectedLines -> Box -> Box
 updateBox player selectedLines box =
     case box.doneBy of
         Just _ ->
@@ -318,7 +335,7 @@ getWinner playerPoints =
         Draw
 
 
-switchPlayers : Player -> Player
+switchPlayers : PlayerStatus -> PlayerStatus
 switchPlayers currentPlayer =
     if currentPlayer == Player1 then
         Player2
@@ -350,16 +367,16 @@ extractBoardSizeFromForm form =
         |> Result.toMaybe
 
 
-validateCurrentPlayerForm : CurrentPlayerForm -> List Error
-validateCurrentPlayerForm form =
+validatePlayerForm : PlayerForm -> List Error
+validatePlayerForm form =
     begin form
         |> validate (validateNotBlank "name" << .name)
         |> extractErrors
 
 
-extractCurrentPlayerFromForm : CurrentPlayerForm -> Maybe CurrentPlayer
-extractCurrentPlayerFromForm form =
-    Result.map (CurrentPlayer "") (stringNotBlankResult form.name)
+extractPlayerFromForm : PlayerForm -> Maybe Player
+extractPlayerFromForm form =
+    Result.map (Player "") (stringNotBlankResult form.name)
         |> Result.toMaybe
 
 
@@ -373,6 +390,7 @@ subscriptions =
         [ gameOpened GameOpened
         , gameChanged GameChanged
         , playerRegistered CurrentPlayerRegistered
+        , openGameAdded OpenGameAdded
         ]
 
 
@@ -388,7 +406,10 @@ port gameOpened : (String -> msg) -> Sub msg
 port gameChanged : (JD.Value -> msg) -> Sub msg
 
 
-port registerPlayer : CurrentPlayer -> Cmd msg
+port registerPlayer : Player -> Cmd msg
 
 
-port playerRegistered : (CurrentPlayer -> msg) -> Sub msg
+port playerRegistered : (Player -> msg) -> Sub msg
+
+
+port openGameAdded : (JD.Value -> msg) -> Sub msg

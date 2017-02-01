@@ -45,13 +45,15 @@ app.ports.registerPlayer.subscribe(player => {
 });
 
 
-games.ref.on("child_added", data => {
+games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
     const game = Object.assign({}, data.val(), {
         id: data.key
     });
-    gameId = data.key;
-    console.log(game);
-    // app.ports.gameStarted.send(game);
+    app.ports.openGameAdded.send(game);
+});
+
+games.ref.orderByChild("status").equalTo("Open").on("child_removed", data => {
+    console.log('removed', data.val())
 });
 
 

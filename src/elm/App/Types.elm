@@ -8,19 +8,24 @@ import Form.Validation exposing (..)
 type alias Model =
     { game : Maybe Game
     , gameForm : GameForm
-    , currentPlayer : Maybe CurrentPlayer
-    , currentPlayerForm : CurrentPlayerForm
+    , currentPlayer : Maybe Player
+    , playerForm : PlayerForm
+    , openGames : List Game
     }
 
 
 
 -- , currentGameId : Maybe
--- , playerInCurrentGame : Maybe Player
+-- , playerInCurrentGame : Maybe PlayerStatus
 -- game sollte wohl Maybe sein
 
 
-type alias CurrentPlayer =
-    { id : String
+type alias PlayerId =
+    String
+
+
+type alias Player =
+    { id : PlayerId
     , name : String
     }
 
@@ -46,7 +51,7 @@ type alias Box =
     , down : Line
     , left : Line
     , right : Line
-    , doneBy : Maybe Player
+    , doneBy : Maybe PlayerStatus
     }
 
 
@@ -70,15 +75,15 @@ type alias BoardSize =
 -}
 
 
-type alias CurrentPlayerForm =
+type alias PlayerForm =
     { name : String
     , errors : List Error
     }
 
 
-defaultCurrentPlayerForm : CurrentPlayerForm
-defaultCurrentPlayerForm =
-    CurrentPlayerForm "" []
+defaultPlayerForm : PlayerForm
+defaultPlayerForm =
+    PlayerForm "" []
 
 
 type alias GameForm =
@@ -94,7 +99,7 @@ defaultGameForm =
 
 
 type alias SelectedLines =
-    Dict Line Player
+    Dict Line PlayerStatus
 
 
 type alias Game =
@@ -104,9 +109,13 @@ type alias Game =
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
-    , currentPlayer : Player
+    , currentPlayer : PlayerStatus
     , playerPoints : PlayerPoints
     }
+
+
+
+-- , players : Dict String PlayerInGame
 
 
 type alias GameId =
@@ -116,13 +125,18 @@ type alias GameId =
 type GameStatus
     = Open
     | Running
-    | Winner Player
+    | Winner PlayerStatus
     | Draw
 
 
-type Player
+type PlayerStatus
     = Player1
     | Player2
+    | Pending
+
+
+type PlayerInGame
+    = PlayerInGame Player PlayerStatus
 
 
 type alias PlayerPoints =
@@ -131,8 +145,8 @@ type alias PlayerPoints =
 
 type Msg
     = RegisterCurrentPlayer
-    | InputCurrentPlayerName String
-    | CurrentPlayerRegistered CurrentPlayer
+    | InputPlayerName String
+    | CurrentPlayerRegistered Player
     | OpenGame
     | StartGame
     | JoinGame GameId
@@ -141,3 +155,4 @@ type Msg
     | Select Line
     | InputWidth String
     | InputHeight String
+    | OpenGameAdded JD.Value

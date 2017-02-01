@@ -41,12 +41,7 @@ viewLobby model =
     section
         [ class "section" ]
         [ div [ class "container" ]
-            [ div [ class "columns" ]
-                [ div [ class "column" ]
-                    [ viewLobbyBody model
-                    ]
-                ]
-            ]
+            [ viewLobbyBody model ]
         ]
 
 
@@ -54,13 +49,28 @@ viewLobbyBody : Model -> Html Msg
 viewLobbyBody model =
     case model.currentPlayer of
         Nothing ->
-            viewPlayerForm model.currentPlayerForm
+            div [ class "columns" ]
+                [ div [ class "column is-half is-offset-one-quarter" ]
+                    [ viewPlayerForm model.playerForm
+                    ]
+                ]
 
         Just player ->
-            viewGameForm model.gameForm
+            div []
+                [ div [ class "columns" ]
+                    [ div [ class "column is-half is-offset-one-quarter" ]
+                        [ viewGameForm model.gameForm
+                        ]
+                    ]
+                , div [ class "columns" ]
+                    [ div [ class "column is-half is-offset-one-quarter" ]
+                        [ viewGameTable model.openGames
+                        ]
+                    ]
+                ]
 
 
-viewPlayerForm : CurrentPlayerForm -> Html Msg
+viewPlayerForm : PlayerForm -> Html Msg
 viewPlayerForm form =
     let
         nameError =
@@ -74,7 +84,7 @@ viewPlayerForm form =
                         [ ( "input", True )
                         , ( "is-danger", nameError /= Nothing )
                         ]
-                    , onInput InputCurrentPlayerName
+                    , onInput InputPlayerName
                     , placeholder "Name"
                     , value form.name
                     ]
@@ -137,7 +147,7 @@ viewGameForm form =
                 [ type_ "submit"
                 , class "button is-primary"
                 ]
-                [ text "Open Game" ]
+                [ text "Open new game" ]
     in
         Html.form [ onSubmit OpenGame ]
             [ widthInput
@@ -146,6 +156,38 @@ viewGameForm form =
                 [ submitButton
                 ]
             ]
+
+
+viewGameTable : List Game -> Html Msg
+viewGameTable games =
+    table
+        [ class "table is-striped " ]
+        [ thead
+            []
+            [ tr
+                []
+                [ th
+                    [ colspan 2 ]
+                    [ text "Open games"
+                    ]
+                ]
+            ]
+        , List.map viewGameRow games
+            |> tbody []
+        ]
+
+
+viewGameRow : Game -> Html Msg
+viewGameRow game =
+    tr
+        []
+        [ td
+            []
+            [ text game.id ]
+        , td
+            []
+            [ text "Join" ]
+        ]
 
 
 viewGame : Game -> Html Msg
