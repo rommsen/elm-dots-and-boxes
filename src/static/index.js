@@ -44,6 +44,16 @@ app.ports.registerPlayer.subscribe(player => {
         });
 });
 
+app.ports.requestToJoinGame.subscribe(request => {
+    games.requestToJoinGame(request)
+        .then(function(val) {
+            console.log('joinGame requested:', val.key)
+        })
+        .catch(err => {
+            console.error("joinGame error:", err);
+        });
+});
+
 
 games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
     const game = Object.assign({}, data.val(), {
@@ -61,5 +71,6 @@ games.ref.on("child_changed", data => {
     const game = Object.assign({}, data.val(), {
         id: data.key
     });
+    console.log('changed', game)
     app.ports.gameChanged.send(game);
 });

@@ -186,7 +186,12 @@ viewGameRow game =
             [ text game.id ]
         , td
             []
-            [ text "Join" ]
+            [ button
+                [ class "button is-primary"
+                , onClick <| JoinGame game.id
+                ]
+                [ text "Join" ]
+            ]
         ]
 
 
@@ -285,6 +290,30 @@ viewGameStats game =
                     ]
                 ]
             ]
+
+
+viewPlayers : Game -> List (Html Msg)
+viewPlayers game =
+    List.map viewPlayer game.pendingPlayers
+
+
+viewPlayer : Player -> Html Msg
+viewPlayer player =
+    tr
+        []
+        [ td
+            []
+            [ text player.name ]
+        , td
+            []
+            [ button
+                [ class "button is-primary"
+                , onClick <| AcceptPlayer player
+                ]
+                [ text "Accept"
+                ]
+            ]
+        ]
 
 
 viewGameBoard : Game -> Html Msg

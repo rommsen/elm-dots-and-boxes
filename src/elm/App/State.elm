@@ -1,11 +1,11 @@
 port module App.State exposing (init, update, subscriptions)
 
+import App.Rest exposing (..)
 import App.Types exposing (..)
 import Dict exposing (Dict)
+import Form.Validation exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
-import Form.Validation exposing (..)
-import App.Rest exposing (..)
 
 
 initialModel : Model
@@ -98,7 +98,7 @@ update msg model =
                     Just boardSize ->
                         let
                             game =
-                                buildGame boardSize
+                                buildGame model.currentPlayer boardSize
                         in
                             ( { model | game = Just game, gameForm = gameForm }
                             , openGame <| gameEncoder game
@@ -113,7 +113,10 @@ update msg model =
                     ( model, Cmd.none )
 
                 Just game ->
-                    ( model, changeGame <| gameEncoder { game | status = Running } )
+                    if game.owner == model.currentPlayer then
+                        ( model, changeGame <| gameEncoder { game | status = Running } )
+                    else
+                        ( model, Cmd.none )
 
         Select line ->
             case model.game of
@@ -189,19 +192,43 @@ update msg model =
                         ( model, Cmd.none )
 
         JoinGame gameId ->
+            case model.currentPlayer of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just player ->
+                    ( model, requestToJoinGame <| JoinGameRequest gameId player )
+
+        JoinGameRequested request ->
+            case model.game of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just game ->
+                    if game.id == request.gameId then
+                        let
+                            newGame =
+                                { game | pendingPlayers = request.player :: game.pendingPlayers }
+                        in
+                            ( model, changeGame <| gameEncoder newGame )
+                    else
+                        ( model, Cmd.none )
+
+        AcceptPlayer player ->
             ( model, Cmd.none )
 
 
-buildGame : BoardSize -> Game
-buildGame boardSize =
+buildGame : Maybe Player -> BoardSize -> Game
+buildGame owner boardSize =
     { id = ""
-    , playerNames = [ "Roman", "Lena" ]
+    , owner = owner
     , boardSize = boardSize
     , boxes = buildBoxes boardSize
     , selectedLines = Dict.empty
     , status = Open
     , currentPlayer = Player1
     , playerPoints = ( 0, 0 )
+    , pendingPlayers = []
     }
 
 
@@ -244,7 +271,8 @@ buildBox x y =
 
 updateBoxes : PlayerStatus -> SelectedLines -> Boxes -> Boxes
 updateBoxes player paths boxes =
-    List.map (updateBox player paths) boxes
+    boxes
+        |> List.map (updateBox player paths)
 
 
 updateBox : PlayerStatus -> SelectedLines -> Box -> Box
@@ -317,7 +345,9 @@ calculatePlayerPoints boxes =
 
 gameHasFinished : Boxes -> Bool
 gameHasFinished boxes =
-    List.isEmpty <| List.filter (\box -> box.doneBy == Nothing) boxes
+    boxes
+        |> List.filter (\box -> box.doneBy == Nothing)
+        |> List.isEmpty
 
 
 playerHasFinishedBox : PlayerPoints -> PlayerPoints -> Bool
@@ -391,7 +421,14 @@ subscriptions =
         , gameChanged GameChanged
         , playerRegistered CurrentPlayerRegistered
         , openGameAdded OpenGameAdded
+        , joinGameRequested JoinGameRequested
         ]
+
+
+port requestToJoinGame : JoinGameRequest -> Cmd msg
+
+
+port joinGameRequested : (JoinGameRequest -> msg) -> Sub msg
 
 
 port openGame : JE.Value -> Cmd msg

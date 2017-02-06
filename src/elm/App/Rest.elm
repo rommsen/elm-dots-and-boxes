@@ -12,13 +12,14 @@ gameDecoder : JD.Decoder Game
 gameDecoder =
     Json.Decode.Pipeline.decode Game
         |> Json.Decode.Pipeline.required "id" JD.string
-        |> Json.Decode.Pipeline.required "playerNames" (JD.list JD.string)
+        |> Json.Decode.Pipeline.optional "player" (JD.nullable playerDecoder) Nothing
         |> Json.Decode.Pipeline.required "boardSize" boardSizeDecoder
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
         |> Json.Decode.Pipeline.required "currentPlayer" playerStatusDecoder
         |> Json.Decode.Pipeline.required "playerPoints" playerPointsDecoder
+        |> Json.Decode.Pipeline.hardcoded []
 
 
 boxesDecoder : JD.Decoder Boxes
@@ -67,6 +68,13 @@ pointDecoder =
     JD.map2 (,)
         (JD.index 0 JD.int)
         (JD.index 1 JD.int)
+
+
+playerDecoder : JD.Decoder Player
+playerDecoder =
+    Json.Decode.Pipeline.decode Player
+        |> Json.Decode.Pipeline.required "id" JD.string
+        |> Json.Decode.Pipeline.required "name" JD.string
 
 
 playerStatusDecoder : JD.Decoder PlayerStatus
@@ -121,7 +129,7 @@ gameEncoder : Game -> JE.Value
 gameEncoder game =
     JE.object
         [ ( "id", JE.string game.id )
-        , ( "playerNames", JE.list <| List.map JE.string game.playerNames )
+        , ( "owner", EJE.maybe encodePlayer game.owner )
         , ( "boardSize", boardSizeEncoder game.boardSize )
         , ( "boxes", boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
@@ -186,3 +194,11 @@ encodeGameStatus gameStatus =
 encodePlayerPoints : PlayerPoints -> JE.Value
 encodePlayerPoints playerPoints =
     EJE.tuple2 JE.int JE.int playerPoints
+
+
+encodePlayer : Player -> JE.Value
+encodePlayer player =
+    JE.object
+        [ ( "id", JE.string player.id )
+        , ( "name", JE.string player.name )
+        ]

@@ -26,6 +26,12 @@ export const games = {
             .set(game);
     },
 
+    requestToJoinGame: request => {
+        return database
+            .ref(GAMES_REFPATH + "/" + request.gameId + "/joinRequests")
+            .push(request.player);
+    },
+
     ref: database.ref(GAMES_REFPATH)
 }
 

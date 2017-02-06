@@ -119,20 +119,23 @@ type alias SelectedLines =
     Dict Line PlayerStatus
 
 
+{-| Maybe Player because its easier to compare owner and model.currentPlayer Later
+-}
 type alias Game =
     { id : String
-    , playerNames : List String
+    , owner : Maybe Player
     , boardSize : BoardSize
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
     , currentPlayer : PlayerStatus
     , playerPoints : PlayerPoints
+    , pendingPlayers : List Player
     }
 
 
 
--- , players : Dict String PlayerInGame
+-- , players : Dict PlayerId PlayerInGame
 
 
 type alias GameId =
@@ -152,12 +155,19 @@ type PlayerStatus
     | Pending
 
 
-type PlayerInGame
-    = PlayerInGame Player PlayerStatus
+
+-- type PlayerInGame
+--     = PlayerInGame Player PlayerStatus PlayerPoints
 
 
 type alias PlayerPoints =
     ( Int, Int )
+
+
+type alias JoinGameRequest =
+    { gameId : GameId
+    , player : Player
+    }
 
 
 type Msg
@@ -167,6 +177,8 @@ type Msg
     | OpenGame
     | StartGame
     | JoinGame GameId
+    | JoinGameRequested JoinGameRequest
+    | AcceptPlayer Player
     | GameOpened String
     | GameChanged JD.Value
     | Select Line
