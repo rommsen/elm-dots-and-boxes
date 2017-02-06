@@ -72,6 +72,23 @@ type alias BoardSize =
 
    Wenn man teilnimmt ebenso
 
+   Wie handele ich Join Requests?
+   Ich kann nicht einfach das Game ändern, da dies zu Race Conditions führen kann
+
+   vllt könnte ich einfach eine neue Liste mit Join Requests bauen?
+   und der Owner kann dann mit dieser arbeiten
+
+   könnte man vllt nicht das ganze Game ändern (also auch serialisieren?), sondern
+   nur an join requests pushen? ich sollte ja trotzdem das change event überall bekommen?!?
+
+   Wenn ich ein game join, muss dieses game direkt das game werden
+
+   sollte man die JoinRequest auch als Dict machen?
+
+   Wenn dies geht könnte man doch wieder "eine" Player Liste machen
+   in dieser Liste steht dann mein status
+
+
 -}
 
 
