@@ -281,10 +281,7 @@ viewGameStats game =
                                 [ text "Points" ]
                             , td
                                 []
-                                [ game.playerPoints
-                                    |> toString
-                                    |> text
-                                ]
+                                []
                             ]
                         ]
                     ]
@@ -351,14 +348,14 @@ viewTableBody game =
             (List.indexedMap (viewTableRows game) grid)
 
 
-viewTableRows : Game -> Int -> List Box -> Html Msg
+viewTableRows : Game -> Coordinate -> List Box -> Html Msg
 viewTableRows game y boxes =
     tr
         [ class "field-row" ]
         (List.indexedMap (viewTableCell game y) boxes)
 
 
-viewTableCell : Game -> Int -> Int -> Box -> Html Msg
+viewTableCell : Game -> Coordinate -> Coordinate -> Box -> Html Msg
 viewTableCell game y x box =
     let
         lastOnX =
@@ -422,8 +419,8 @@ viewTableCell game y x box =
             [ class "field-cell"
             , classList
                 [ ( "field-cell__done", box.doneBy /= Nothing )
-                , ( "field-cell__done__self", box.doneBy == Just Player1 )
-                , ( "field-cell__done__rival", box.doneBy == Just Player2 )
+                , ( "field-cell__done__self", box.doneBy /= Nothing )
+                , ( "field-cell__done__rival", box.doneBy /= Nothing )
                 ]
             ]
             [ div
@@ -435,15 +432,14 @@ viewTableCell game y x box =
 lineClasses : Line -> SelectedLines -> List ( String, Bool )
 lineClasses line selectedLines =
     let
-        player =
+        playerId =
             Dict.get line selectedLines
     in
-        case player of
+        case playerId of
             Nothing ->
                 []
 
             Just player ->
                 [ ( "edge__done", True )
-                , ( "edge__done edge__done__self", player == Player1 )
-                , ( "edge__done edge__done__rival", player == Player2 )
+                , ( "edge__done edge__done__self", True )
                 ]

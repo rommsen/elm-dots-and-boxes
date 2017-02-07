@@ -12,13 +12,13 @@ gameDecoder : JD.Decoder Game
 gameDecoder =
     Json.Decode.Pipeline.decode Game
         |> Json.Decode.Pipeline.required "id" JD.string
-        |> Json.Decode.Pipeline.optional "player" (JD.nullable playerDecoder) Nothing
+        |> Json.Decode.Pipeline.optional "owner" (JD.nullable playerDecoder) Nothing
         |> Json.Decode.Pipeline.required "boardSize" boardSizeDecoder
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
-        |> Json.Decode.Pipeline.required "currentPlayer" playerStatusDecoder
-        |> Json.Decode.Pipeline.required "playerPoints" playerPointsDecoder
+        |> Json.Decode.Pipeline.optional "currentPlayer" (JD.nullable JD.string) Nothing
+        |> Json.Decode.Pipeline.optional "players" playersDecoder Dict.empty
         |> Json.Decode.Pipeline.hardcoded []
 
 
@@ -41,7 +41,7 @@ boxDecoder =
         |> Json.Decode.Pipeline.required "down" lineDecoder
         |> Json.Decode.Pipeline.required "left" lineDecoder
         |> Json.Decode.Pipeline.required "right" lineDecoder
-        |> Json.Decode.Pipeline.optional "doneBy" (JD.nullable playerStatusDecoder) Nothing
+        |> Json.Decode.Pipeline.optional "doneBy" (JD.nullable JD.string) Nothing
 
 
 selectedLinesDecoder : JD.Decoder SelectedLines
@@ -49,11 +49,11 @@ selectedLinesDecoder =
     JD.map Dict.fromList (JD.list selectedLineDecoder)
 
 
-selectedLineDecoder : JD.Decoder ( Line, PlayerStatus )
+selectedLineDecoder : JD.Decoder ( Line, PlayerId )
 selectedLineDecoder =
     JD.map2 (,)
         (JD.index 0 lineDecoder)
-        (JD.index 1 playerStatusDecoder)
+        (JD.index 1 JD.string)
 
 
 lineDecoder : JD.Decoder Line
@@ -68,6 +68,14 @@ pointDecoder =
     JD.map2 (,)
         (JD.index 0 JD.int)
         (JD.index 1 JD.int)
+
+
+playerInGameDecoder : JD.Decoder PlayerInGame
+playerInGameDecoder =
+    Json.Decode.Pipeline.decode createPlayerInGame
+        |> Json.Decode.Pipeline.required "player" playerDecoder
+        |> Json.Decode.Pipeline.required "status" playerStatusDecoder
+        |> Json.Decode.Pipeline.required "points" JD.int
 
 
 playerDecoder : JD.Decoder Player
@@ -99,6 +107,18 @@ playerStatusStringDecoder string =
             JD.fail "player not available"
 
 
+playersDecoder : JD.Decoder Players
+playersDecoder =
+    JD.map Dict.fromList (JD.list playerInGameWithIdAsKeyDecoder)
+
+
+playerInGameWithIdAsKeyDecoder : JD.Decoder ( PlayerId, PlayerInGame )
+playerInGameWithIdAsKeyDecoder =
+    JD.map2 (,)
+        (JD.index 0 JD.string)
+        (JD.index 1 playerInGameDecoder)
+
+
 gameStatusDecoder : JD.Decoder GameStatus
 gameStatusDecoder =
     JD.string
@@ -107,9 +127,7 @@ gameStatusDecoder =
 
 playerPointsDecoder : JD.Decoder PlayerPoints
 playerPointsDecoder =
-    JD.map2 (,)
-        (JD.index 0 JD.int)
-        (JD.index 1 JD.int)
+    JD.int
 
 
 gameStatusStringDecoder : String -> JD.Decoder GameStatus
@@ -134,8 +152,7 @@ gameEncoder game =
         , ( "boxes", boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
         , ( "status", encodeGameStatus game.status )
-        , ( "currentPlayer", encodePlayerStatus game.currentPlayer )
-        , ( "playerPoints", encodePlayerPoints game.playerPoints )
+        , ( "currentPlayer", EJE.maybe JE.string game.currentPlayer )
         ]
 
 
@@ -160,13 +177,13 @@ boxEncoder box =
         , ( "down", encodeLine box.down )
         , ( "left", encodeLine box.left )
         , ( "right", encodeLine box.right )
-        , ( "doneBy", EJE.maybe encodePlayerStatus box.doneBy )
+        , ( "doneBy", EJE.maybe JE.string box.doneBy )
         ]
 
 
 selectedLinesEncoder : SelectedLines -> JE.Value
 selectedLinesEncoder selectedLines =
-    EJE.dict encodeLine encodePlayerStatus selectedLines
+    EJE.dict encodeLine JE.string selectedLines
 
 
 encodeLine : Line -> JE.Value
@@ -179,6 +196,15 @@ encodePoint point =
     EJE.tuple2 JE.int JE.int point
 
 
+encodePlayerInGame : PlayerInGame -> JE.Value
+encodePlayerInGame (PlayerInGame { player, status, points }) =
+    JE.object
+        [ ( "player", encodePlayer player )
+        , ( "status", encodePlayerStatus status )
+        , ( "points", JE.int points )
+        ]
+
+
 encodePlayerStatus : PlayerStatus -> JE.Value
 encodePlayerStatus playerStatus =
     toString playerStatus
@@ -189,11 +215,6 @@ encodeGameStatus : GameStatus -> JE.Value
 encodeGameStatus gameStatus =
     toString gameStatus
         |> JE.string
-
-
-encodePlayerPoints : PlayerPoints -> JE.Value
-encodePlayerPoints playerPoints =
-    EJE.tuple2 JE.int JE.int playerPoints
 
 
 encodePlayer : Player -> JE.Value

@@ -14,12 +14,6 @@ type alias Model =
     }
 
 
-
--- , currentGameId : Maybe
--- , playerInCurrentGame : Maybe PlayerStatus
--- game sollte wohl Maybe sein
-
-
 type alias PlayerId =
     String
 
@@ -34,10 +28,14 @@ type alias Boxes =
     List Box
 
 
+type alias Coordinate =
+    Int
+
+
 {-| Can not be a union type because I need it as a key in a Dict
 -}
 type alias Point =
-    ( Int, Int )
+    ( Coordinate, Coordinate )
 
 
 {-| Can not be a union type because I need it as a key in a Dict
@@ -51,7 +49,7 @@ type alias Box =
     , down : Line
     , left : Line
     , right : Line
-    , doneBy : Maybe PlayerStatus
+    , doneBy : Maybe PlayerId
     }
 
 
@@ -116,7 +114,7 @@ defaultGameForm =
 
 
 type alias SelectedLines =
-    Dict Line PlayerStatus
+    Dict Line PlayerId
 
 
 {-| Maybe Player because its easier to compare owner and model.currentPlayer Later
@@ -128,14 +126,10 @@ type alias Game =
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
-    , currentPlayer : PlayerStatus
-    , playerPoints : PlayerPoints
+    , currentPlayer : Maybe PlayerId
+    , players : Players
     , pendingPlayers : List Player
     }
-
-
-
--- , players : Dict PlayerId PlayerInGame
 
 
 type alias GameId =
@@ -155,13 +149,25 @@ type PlayerStatus
     | Pending
 
 
-
--- type PlayerInGame
---     = PlayerInGame Player PlayerStatus PlayerPoints
-
-
 type alias PlayerPoints =
-    ( Int, Int )
+    Int
+
+
+type alias Players =
+    Dict PlayerId PlayerInGame
+
+
+type PlayerInGame
+    = PlayerInGame
+        { player : Player
+        , status : PlayerStatus
+        , points : PlayerPoints
+        }
+
+
+createPlayerInGame : Player -> PlayerStatus -> PlayerPoints -> PlayerInGame
+createPlayerInGame player status points =
+    PlayerInGame { player = player, status = status, points = points }
 
 
 type alias JoinGameRequest =
