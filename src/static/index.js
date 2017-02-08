@@ -59,6 +59,7 @@ games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
     const game = Object.assign({}, data.val(), {
         id: data.key
     });
+    console.log('child_added', JSON.stringify(game.joinRequests))
     app.ports.openGameAdded.send(game);
 });
 
@@ -71,6 +72,6 @@ games.ref.on("child_changed", data => {
     const game = Object.assign({}, data.val(), {
         id: data.key
     });
-    console.log('changed', game)
+    console.log('changed', game.joinRequests)
     app.ports.gameChanged.send(game);
 });

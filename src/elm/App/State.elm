@@ -184,28 +184,16 @@ update msg model =
                     in
                         ( model, Cmd.none )
 
-        JoinGame gameId ->
+        RequestToJoinGame gameId ->
             case model.currentPlayer of
                 Nothing ->
                     ( model, Cmd.none )
 
                 Just player ->
-                    ( model, requestToJoinGame <| JoinGameRequest gameId player )
-
-        JoinGameRequested request ->
-            case model.game of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just game ->
-                    if game.id == request.gameId then
-                        let
-                            newGame =
-                                { game | pendingPlayers = request.player :: game.pendingPlayers }
-                        in
-                            ( model, changeGame <| gameEncoder newGame )
-                    else
-                        ( model, Cmd.none )
+                    ( model
+                    , JoinGameRequest gameId player
+                        |> requestToJoinGame
+                    )
 
         AcceptPlayer player ->
             ( model, Cmd.none )
@@ -221,7 +209,7 @@ buildGame owner boardSize =
     , status = Open
     , currentPlayer = Nothing
     , players = Dict.empty
-    , pendingPlayers = []
+    , joinRequests = Dict.empty
     }
 
 
@@ -450,14 +438,10 @@ subscriptions =
         , gameChanged GameChanged
         , playerRegistered CurrentPlayerRegistered
         , openGameAdded OpenGameAdded
-        , joinGameRequested JoinGameRequested
         ]
 
 
 port requestToJoinGame : JoinGameRequest -> Cmd msg
-
-
-port joinGameRequested : (JoinGameRequest -> msg) -> Sub msg
 
 
 port openGame : JE.Value -> Cmd msg

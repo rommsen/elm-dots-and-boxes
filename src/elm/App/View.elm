@@ -188,7 +188,7 @@ viewGameRow game =
             []
             [ button
                 [ class "button is-primary"
-                , onClick <| JoinGame game.id
+                , onClick <| RequestToJoinGame game.id
                 ]
                 [ text "Join" ]
             ]
@@ -242,6 +242,27 @@ viewGameStats game =
                     ]
             else
                 text ""
+
+        rows =
+            [ tr
+                []
+                [ td
+                    []
+                    [ text "Turn" ]
+                , td
+                    []
+                    [ text <| toString game.currentPlayer ]
+                ]
+            , tr
+                []
+                [ td
+                    []
+                    [ text "Points" ]
+                , td
+                    []
+                    []
+                ]
+            ]
     in
         div [ class "column" ]
             [ div [ class "box" ]
@@ -263,27 +284,7 @@ viewGameStats game =
                                 ]
                             ]
                         ]
-                    , tbody
-                        []
-                        [ tr
-                            []
-                            [ td
-                                []
-                                [ text "Turn" ]
-                            , td
-                                []
-                                [ text <| toString game.currentPlayer ]
-                            ]
-                        , tr
-                            []
-                            [ td
-                                []
-                                [ text "Points" ]
-                            , td
-                                []
-                                []
-                            ]
-                        ]
+                    , tbody [] (rows ++ viewPlayers game)
                     ]
                 ]
             ]
@@ -291,11 +292,13 @@ viewGameStats game =
 
 viewPlayers : Game -> List (Html Msg)
 viewPlayers game =
-    List.map viewPlayer game.pendingPlayers
+    game.joinRequests
+        |> Dict.values
+        |> List.map (viewPlayer game)
 
 
-viewPlayer : Player -> Html Msg
-viewPlayer player =
+viewPlayer : Game -> Player -> Html Msg
+viewPlayer game player =
     tr
         []
         [ td

@@ -128,7 +128,7 @@ type alias Game =
     , status : GameStatus
     , currentPlayer : Maybe PlayerId
     , players : Players
-    , pendingPlayers : List Player
+    , joinRequests : Dict String Player
     }
 
 
@@ -182,8 +182,7 @@ type Msg
     | CurrentPlayerRegistered Player
     | OpenGame
     | StartGame
-    | JoinGame GameId
-    | JoinGameRequested JoinGameRequest
+    | RequestToJoinGame GameId
     | AcceptPlayer Player
     | GameOpened String
     | GameChanged JD.Value

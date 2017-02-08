@@ -19,7 +19,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
         |> Json.Decode.Pipeline.optional "currentPlayer" (JD.nullable JD.string) Nothing
         |> Json.Decode.Pipeline.optional "players" playersDecoder Dict.empty
-        |> Json.Decode.Pipeline.hardcoded []
+        |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
 
 
 boxesDecoder : JD.Decoder Boxes
@@ -68,6 +68,18 @@ pointDecoder =
     JD.map2 (,)
         (JD.index 0 JD.int)
         (JD.index 1 JD.int)
+
+
+joinRequestsDecoder : JD.Decoder (Dict.Dict String Player)
+joinRequestsDecoder =
+    JD.dict playerDecoder
+
+
+joinRequestDecoder : JD.Decoder ( String, Player )
+joinRequestDecoder =
+    JD.map2 (,)
+        (JD.index 0 JD.string)
+        (JD.index 1 playerDecoder)
 
 
 playerInGameDecoder : JD.Decoder PlayerInGame
@@ -153,6 +165,7 @@ gameEncoder game =
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
         , ( "status", encodeGameStatus game.status )
         , ( "currentPlayer", EJE.maybe JE.string game.currentPlayer )
+        , ( "joinRequests", joinRequestsEncoder game.joinRequests )
         ]
 
 
@@ -217,9 +230,26 @@ encodeGameStatus gameStatus =
         |> JE.string
 
 
+playersEncoder : List Player -> JE.Value
+playersEncoder players =
+    List.map encodePlayer players
+        |> JE.list
+
+
 encodePlayer : Player -> JE.Value
 encodePlayer player =
     JE.object
         [ ( "id", JE.string player.id )
         , ( "name", JE.string player.name )
         ]
+
+
+joinRequestsEncoder : Dict.Dict String Player -> JE.Value
+joinRequestsEncoder joinRequests =
+    Dict.toList joinRequests
+        |> List.map (Tuple.mapSecond encodePlayer)
+        |> JE.object
+
+
+
+-- |> List.map (Tuple.mapFirst JE.string)
