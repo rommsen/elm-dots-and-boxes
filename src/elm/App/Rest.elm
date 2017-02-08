@@ -12,13 +12,12 @@ gameDecoder : JD.Decoder Game
 gameDecoder =
     Json.Decode.Pipeline.decode Game
         |> Json.Decode.Pipeline.required "id" JD.string
-        |> Json.Decode.Pipeline.optional "owner" (JD.nullable playerDecoder) Nothing
+        |> Json.Decode.Pipeline.required "owner" playerDecoder
         |> Json.Decode.Pipeline.required "boardSize" boardSizeDecoder
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
-        |> Json.Decode.Pipeline.optional "currentPlayer" (JD.nullable JD.string) Nothing
-        |> Json.Decode.Pipeline.optional "players" playersDecoder Dict.empty
+        |> Json.Decode.Pipeline.required "players" playersInGameDecoder
         |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
 
 
@@ -41,7 +40,7 @@ boxDecoder =
         |> Json.Decode.Pipeline.required "down" lineDecoder
         |> Json.Decode.Pipeline.required "left" lineDecoder
         |> Json.Decode.Pipeline.required "right" lineDecoder
-        |> Json.Decode.Pipeline.optional "doneBy" (JD.nullable JD.string) Nothing
+        |> Json.Decode.Pipeline.optional "doneBy" (JD.nullable playerStatusDecoder) Nothing
 
 
 selectedLinesDecoder : JD.Decoder SelectedLines
@@ -90,6 +89,14 @@ playerInGameDecoder =
         |> Json.Decode.Pipeline.required "points" JD.int
 
 
+playersInGameDecoder : JD.Decoder PlayersInGame
+playersInGameDecoder =
+    Json.Decode.Pipeline.decode createPlayersInGame
+        |> Json.Decode.Pipeline.optional "previous" (JD.list playerInGameDecoder) []
+        |> Json.Decode.Pipeline.required "current" playerInGameDecoder
+        |> Json.Decode.Pipeline.optional "next" (JD.list playerInGameDecoder) []
+
+
 playerDecoder : JD.Decoder Player
 playerDecoder =
     Json.Decode.Pipeline.decode Player
@@ -111,9 +118,6 @@ playerStatusStringDecoder string =
 
         "Player2" ->
             JD.succeed Player2
-
-        "Pending" ->
-            JD.succeed Pending
 
         _ ->
             JD.fail "player not available"
@@ -159,12 +163,12 @@ gameEncoder : Game -> JE.Value
 gameEncoder game =
     JE.object
         [ ( "id", JE.string game.id )
-        , ( "owner", EJE.maybe encodePlayer game.owner )
+        , ( "owner", encodePlayer game.owner )
         , ( "boardSize", boardSizeEncoder game.boardSize )
         , ( "boxes", boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
         , ( "status", encodeGameStatus game.status )
-        , ( "currentPlayer", EJE.maybe JE.string game.currentPlayer )
+        , ( "players", playersInGameEncoder game.players )
         , ( "joinRequests", joinRequestsEncoder game.joinRequests )
         ]
 
@@ -190,7 +194,7 @@ boxEncoder box =
         , ( "down", encodeLine box.down )
         , ( "left", encodeLine box.left )
         , ( "right", encodeLine box.right )
-        , ( "doneBy", EJE.maybe JE.string box.doneBy )
+        , ( "doneBy", EJE.maybe playerStatusEncoder box.doneBy )
         ]
 
 
@@ -209,17 +213,26 @@ encodePoint point =
     EJE.tuple2 JE.int JE.int point
 
 
-encodePlayerInGame : PlayerInGame -> JE.Value
-encodePlayerInGame (PlayerInGame { player, status, points }) =
+playersInGameEncoder : PlayersInGame -> JE.Value
+playersInGameEncoder (PlayersInGame { previous, current, next }) =
+    JE.object
+        [ ( "previous", JE.list <| List.map playerInGameEncoder previous )
+        , ( "current", playerInGameEncoder current )
+        , ( "next", JE.list <| List.map playerInGameEncoder next )
+        ]
+
+
+playerInGameEncoder : PlayerInGame -> JE.Value
+playerInGameEncoder (PlayerInGame { player, status, points }) =
     JE.object
         [ ( "player", encodePlayer player )
-        , ( "status", encodePlayerStatus status )
+        , ( "status", playerStatusEncoder status )
         , ( "points", JE.int points )
         ]
 
 
-encodePlayerStatus : PlayerStatus -> JE.Value
-encodePlayerStatus playerStatus =
+playerStatusEncoder : PlayerStatus -> JE.Value
+playerStatusEncoder playerStatus =
     toString playerStatus
         |> JE.string
 

@@ -232,6 +232,9 @@ viewGameInProcess game =
 viewGameStats : Game -> Html Msg
 viewGameStats game =
     let
+        (PlayerInGame { player }) =
+            getCurrentPlayer game.players
+
         startButton =
             if game.status == Open then
                 button
@@ -251,7 +254,7 @@ viewGameStats game =
                     [ text "Turn" ]
                 , td
                     []
-                    [ text <| toString game.currentPlayer ]
+                    [ text <| player.name ]
                 ]
             , tr
                 []

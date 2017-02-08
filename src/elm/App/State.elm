@@ -6,6 +6,7 @@ import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
+import List.Nonempty
 
 
 initialModel : Model
@@ -94,11 +95,11 @@ update msg model =
                 gameForm =
                     { form | errors = validateGameForm form }
             in
-                case extractBoardSizeFromForm gameForm of
-                    Just boardSize ->
+                case ( extractBoardSizeFromForm gameForm, model.currentPlayer ) of
+                    ( Just boardSize, Just currentPlayer ) ->
                         let
                             game =
-                                buildGame model.currentPlayer boardSize
+                                buildGame currentPlayer boardSize
                         in
                             ( { model | game = Just game, gameForm = gameForm }
                             , game
@@ -106,16 +107,13 @@ update msg model =
                                 |> openGame
                             )
 
-                    Nothing ->
+                    _ ->
                         ( { model | gameForm = gameForm }, Cmd.none )
 
         StartGame ->
-            case model.game of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just game ->
-                    if game.owner == model.currentPlayer then
+            case ( model.game, model.currentPlayer ) of
+                ( Just game, Just currentPlayer ) ->
+                    if game.owner == currentPlayer then
                         ( model
                         , { game | status = Running }
                             |> gameEncoder
@@ -123,6 +121,9 @@ update msg model =
                         )
                     else
                         ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
         Select line ->
             case model.game of
@@ -199,18 +200,21 @@ update msg model =
             ( model, Cmd.none )
 
 
-buildGame : Maybe Player -> BoardSize -> Game
+buildGame : Player -> BoardSize -> Game
 buildGame owner boardSize =
-    { id = ""
-    , owner = owner
-    , boardSize = boardSize
-    , boxes = buildBoxes boardSize
-    , selectedLines = Dict.empty
-    , status = Open
-    , currentPlayer = Nothing
-    , players = Dict.empty
-    , joinRequests = Dict.empty
-    }
+    let
+        playerInGame =
+            createPlayerInGame owner Player1 0
+    in
+        { id = ""
+        , owner = owner
+        , boardSize = boardSize
+        , boxes = buildBoxes boardSize
+        , selectedLines = Dict.empty
+        , status = Open
+        , players = createPlayersInGame [] playerInGame []
+        , joinRequests = Dict.empty
+        }
 
 
 buildBoxes : BoardSize -> Boxes
@@ -252,57 +256,105 @@ lineCanNotBeSelected line game =
 
 
 selectLine : Line -> Game -> Game
-selectLine line game =
-    case game.status of
+selectLine line oldGame =
+    case oldGame.status of
         Running ->
-            case getCurrentPlayer game of
-                Nothing ->
-                    game
-
-                Just (PlayerInGame { player }) ->
-                    let
-                        newGame =
-                            game
-                                |> insertLine player line
-                                |> updateBoxes player
-                                |> updatePlayers player game
-                    in
-                        if gameHasFinished newGame.boxes then
-                            { newGame | status = getWinner game }
-                        else if boxWasFinished game newGame then
-                            newGame
-                        else
-                            { newGame | currentPlayer = switchPlayers game }
+            oldGame
+                |> insertLine line
+                |> updateBoxes
+                |> updatePlayers oldGame
+                |> evaluateRound oldGame
 
         _ ->
-            game
+            oldGame
 
 
-insertLine : Player -> Line -> Game -> Game
-insertLine player line game =
-    { game
-        | selectedLines = Dict.insert line player.id game.selectedLines
-    }
+evaluateRound : Game -> Game -> Game
+evaluateRound oldGame newGame =
+    if gameHasFinished newGame.boxes then
+        { newGame | status = getWinner newGame }
+    else if boxWasFinished oldGame newGame then
+        newGame
+    else
+        { newGame | players = nextPlayer newGame.players }
 
 
-updateBoxes : Player -> Game -> Game
-updateBoxes player game =
-    { game
-        | boxes =
-            game.boxes
-                |> List.map (updateBox player game.selectedLines)
-    }
+nextPlayer : PlayersInGame -> PlayersInGame
+nextPlayer (PlayersInGame { previous, current, next }) =
+    let
+        {- | Nonempty.List allows me to work without Maybe handling when next is empty
+
+           when it is empty the list being previously "previous" must be the new next
+           If I have a single player game, the current player just stays current with
+           this implementation
+        -}
+        previousWithCurrent =
+            previous
+                |> List.reverse
+                |> (::) current
+                |> List.reverse
+                |> List.Nonempty.fromList
+                |> Maybe.withDefault (List.Nonempty.fromElement current)
+    in
+        case next of
+            head :: tail ->
+                PlayersInGame
+                    { previous = List.Nonempty.toList previousWithCurrent
+                    , current = head
+                    , next = tail
+                    }
+
+            {- | no more next questions available -}
+            [] ->
+                PlayersInGame
+                    { previous = []
+                    , current = List.Nonempty.head previousWithCurrent
+                    , next = List.Nonempty.tail previousWithCurrent
+                    }
 
 
-updateBox : Player -> SelectedLines -> Box -> Box
-updateBox player selectedLines box =
+initPlayersInGame : PlayerInGame -> PlayersInGame
+initPlayersInGame player =
+    PlayersInGame
+        { previous = []
+        , current = player
+        , next = []
+        }
+
+
+insertLine : Line -> Game -> Game
+insertLine line game =
+    let
+        (PlayerInGame { player }) =
+            getCurrentPlayer game.players
+    in
+        { game
+            | selectedLines = Dict.insert line player.id game.selectedLines
+        }
+
+
+updateBoxes : Game -> Game
+updateBoxes game =
+    let
+        (PlayerInGame { status }) =
+            getCurrentPlayer game.players
+    in
+        { game
+            | boxes =
+                game.boxes
+                    |> List.map (updateBox status game.selectedLines)
+        }
+
+
+updateBox : PlayerStatus -> SelectedLines -> Box -> Box
+updateBox status selectedLines box =
     case box.doneBy of
         {- | the box can only be done, when it was not done before -}
         Nothing ->
             let
                 doneBy =
                     if boxIsDone box selectedLines then
-                        Just player.id
+                        Just status
                     else
                         Nothing
             in
@@ -312,19 +364,21 @@ updateBox player selectedLines box =
             box
 
 
-updatePlayers : Player -> Game -> Game -> Game
-updatePlayers player oldGame newGame =
-    { newGame
-        | players =
-            Dict.update player.id (updatePlayerPoints oldGame newGame) oldGame.players
-    }
+updatePlayers : Game -> Game -> Game
+updatePlayers oldGame newGame =
+    let
+        newPlayers =
+            getCurrentPlayer oldGame.players
+                |> updatePlayerPoints oldGame newGame
+                |> updateCurrentPlayer oldGame.players
+    in
+        { newGame | players = newPlayers }
 
 
-updatePlayerPoints : Game -> Game -> Maybe PlayerInGame -> Maybe PlayerInGame
+updatePlayerPoints : Game -> Game -> PlayerInGame -> PlayerInGame
 updatePlayerPoints oldGame newGame =
     boxWasFinished oldGame newGame
         |> increasePlayerPoints
-        |> Maybe.map
 
 
 increasePlayerPoints : Bool -> PlayerInGame -> PlayerInGame
@@ -352,16 +406,6 @@ countFinishedBoxes game =
     game.boxes
         |> List.filter (\box -> box.doneBy /= Nothing)
         |> List.length
-
-
-getCurrentPlayer : Game -> Maybe PlayerInGame
-getCurrentPlayer game =
-    case game.currentPlayer of
-        Nothing ->
-            Nothing
-
-        Just playerId ->
-            Dict.get playerId game.players
 
 
 getWinner : Game -> GameStatus
