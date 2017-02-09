@@ -101,7 +101,10 @@ update msg model =
                             game =
                                 buildGame currentPlayer boardSize
                         in
-                            ( { model | game = Just game, gameForm = gameForm }
+                            ( { model
+                                | game = Just game
+                                , gameForm = gameForm
+                              }
                             , game
                                 |> gameEncoder
                                 |> openGame
@@ -176,7 +179,11 @@ update msg model =
         OpenGameAdded value ->
             case JD.decodeValue gameDecoder value of
                 Ok openGame ->
-                    ( { model | openGames = openGame :: model.openGames }, Cmd.none )
+                    ( { model
+                        | openGames = openGame :: model.openGames
+                      }
+                    , Cmd.none
+                    )
 
                 Err err ->
                     let
@@ -185,19 +192,49 @@ update msg model =
                     in
                         ( model, Cmd.none )
 
-        RequestToJoinGame gameId ->
+        RequestToJoinGame game ->
             case model.currentPlayer of
                 Nothing ->
                     ( model, Cmd.none )
 
                 Just player ->
-                    ( model
-                    , JoinGameRequest gameId player
+                    ( { model
+                        | game = Just game
+                      }
+                    , JoinGameRequest game.id player
                         |> requestToJoinGame
                     )
 
-        AcceptPlayer player ->
-            ( model, Cmd.none )
+        AcceptPlayer joinGameRequestEntry ->
+            case model.game of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just game ->
+                    ( model
+                    , addNewPlayerToGame joinGameRequestEntry game
+                        |> gameEncoder
+                        |> changeGame
+                    )
+
+
+addNewPlayerToGame : JoinGameRequestEntry -> Game -> Game
+addNewPlayerToGame ( joinRequestId, player ) game =
+    case game.availablePlayerStatus of
+        head :: tail ->
+            let
+                newPlayers =
+                    createPlayerInGame player head 0
+                        |> addPlayer game.players
+            in
+                { game
+                    | players = newPlayers
+                    , availablePlayerStatus = tail
+                    , joinRequests = Dict.remove joinRequestId game.joinRequests
+                }
+
+        [] ->
+            game
 
 
 buildGame : Player -> BoardSize -> Game
@@ -213,6 +250,7 @@ buildGame owner boardSize =
         , selectedLines = Dict.empty
         , status = Open
         , players = createPlayersInGame [] playerInGame []
+        , availablePlayerStatus = [ Player2 ]
         , joinRequests = Dict.empty
         }
 
@@ -325,11 +363,11 @@ initPlayersInGame player =
 insertLine : Line -> Game -> Game
 insertLine line game =
     let
-        (PlayerInGame { player }) =
+        (PlayerInGame { status }) =
             getCurrentPlayer game.players
     in
         { game
-            | selectedLines = Dict.insert line player.id game.selectedLines
+            | selectedLines = Dict.insert line status game.selectedLines
         }
 
 
@@ -338,12 +376,12 @@ updateBoxes game =
     let
         (PlayerInGame { status }) =
             getCurrentPlayer game.players
+
+        newBoxes =
+            game.boxes
+                |> List.map (updateBox status game.selectedLines)
     in
-        { game
-            | boxes =
-                game.boxes
-                    |> List.map (updateBox status game.selectedLines)
-        }
+        { game | boxes = newBoxes }
 
 
 updateBox : PlayerStatus -> SelectedLines -> Box -> Box
@@ -411,27 +449,6 @@ countFinishedBoxes game =
 getWinner : Game -> GameStatus
 getWinner game =
     Winner Player1
-
-
-
--- if Tuple.first playerPoints > Tuple.second playerPoints then
---     Winner Player1
--- else if Tuple.second playerPoints > Tuple.first playerPoints then
---     Winner Player2
--- else
---     Draw
-
-
-switchPlayers : Game -> Maybe PlayerId
-switchPlayers game =
-    Just "abc"
-
-
-
--- if currentPlayer == Player1 then
---     Player2
--- else
---     Player1
 
 
 boxIsDone : Box -> SelectedLines -> Bool

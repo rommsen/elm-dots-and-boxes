@@ -18,6 +18,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
         |> Json.Decode.Pipeline.required "players" playersInGameDecoder
+        |> Json.Decode.Pipeline.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
         |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
 
 
@@ -48,11 +49,11 @@ selectedLinesDecoder =
     JD.map Dict.fromList (JD.list selectedLineDecoder)
 
 
-selectedLineDecoder : JD.Decoder ( Line, PlayerId )
+selectedLineDecoder : JD.Decoder ( Line, PlayerStatus )
 selectedLineDecoder =
     JD.map2 (,)
         (JD.index 0 lineDecoder)
-        (JD.index 1 JD.string)
+        (JD.index 1 playerStatusDecoder)
 
 
 lineDecoder : JD.Decoder Line
@@ -169,6 +170,7 @@ gameEncoder game =
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
         , ( "status", encodeGameStatus game.status )
         , ( "players", playersInGameEncoder game.players )
+        , ( "availablePlayerStatus", JE.list <| List.map playerStatusEncoder game.availablePlayerStatus )
         , ( "joinRequests", joinRequestsEncoder game.joinRequests )
         ]
 
@@ -200,7 +202,7 @@ boxEncoder box =
 
 selectedLinesEncoder : SelectedLines -> JE.Value
 selectedLinesEncoder selectedLines =
-    EJE.dict encodeLine JE.string selectedLines
+    EJE.dict encodeLine playerStatusEncoder selectedLines
 
 
 encodeLine : Line -> JE.Value

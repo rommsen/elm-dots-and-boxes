@@ -183,16 +183,31 @@ viewGameRow game =
         []
         [ td
             []
-            [ text game.id ]
+            [ text <| viewGameDescription game ]
         , td
             []
             [ button
                 [ class "button is-primary"
-                , onClick <| RequestToJoinGame game.id
+                , onClick <| RequestToJoinGame game
                 ]
                 [ text "Join" ]
             ]
         ]
+
+
+viewGameDescription : Game -> String
+viewGameDescription game =
+    let
+        boardSize =
+            "Board Size: "
+                ++ toString game.boardSize.width
+                ++ " x "
+                ++ toString game.boardSize.height
+
+        owner =
+            "Owner: " ++ game.owner.name
+    in
+        boardSize ++ " " ++ owner
 
 
 viewGame : Game -> Html Msg
@@ -296,22 +311,22 @@ viewGameStats game =
 viewPlayers : Game -> List (Html Msg)
 viewPlayers game =
     game.joinRequests
-        |> Dict.values
+        |> Dict.toList
         |> List.map (viewPlayer game)
 
 
-viewPlayer : Game -> Player -> Html Msg
-viewPlayer game player =
+viewPlayer : Game -> JoinGameRequestEntry -> Html Msg
+viewPlayer game joinGameRequestEntry =
     tr
         []
         [ td
             []
-            [ text player.name ]
+            [ text <| .name (Tuple.second joinGameRequestEntry) ]
         , td
             []
             [ button
                 [ class "button is-primary"
-                , onClick <| AcceptPlayer player
+                , onClick <| AcceptPlayer joinGameRequestEntry
                 ]
                 [ text "Accept"
                 ]
@@ -423,11 +438,7 @@ viewTableCell game y x box =
     in
         td
             [ class "field-cell"
-            , classList
-                [ ( "field-cell__done", box.doneBy /= Nothing )
-                , ( "field-cell__done__self", box.doneBy /= Nothing )
-                , ( "field-cell__done__rival", box.doneBy /= Nothing )
-                ]
+            , classList <| boxClasses box
             ]
             [ div
                 [ class "edges" ]
@@ -435,17 +446,25 @@ viewTableCell game y x box =
             ]
 
 
+boxClasses : Box -> List ( String, Bool )
+boxClasses box =
+    case box.doneBy of
+        Nothing ->
+            []
+
+        Just playerStatus ->
+            [ ( "field-cell__done", True )
+            , ( "field-cell__done__" ++ toString playerStatus, True )
+            ]
+
+
 lineClasses : Line -> SelectedLines -> List ( String, Bool )
 lineClasses line selectedLines =
-    let
-        playerId =
-            Dict.get line selectedLines
-    in
-        case playerId of
-            Nothing ->
-                []
+    case Dict.get line selectedLines of
+        Nothing ->
+            []
 
-            Just player ->
-                [ ( "edge__done", True )
-                , ( "edge__done edge__done__self", True )
-                ]
+        Just playerStatus ->
+            [ ( "edge__done", True )
+            , ( "edge__done edge__done__" ++ toString playerStatus, True )
+            ]

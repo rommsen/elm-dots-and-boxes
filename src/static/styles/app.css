@@ -57,10 +57,10 @@
     -o-transition: background-color .2s ease;
     transition: background-color .2s ease
 }
-.field-cell__done__self {
+.field-cell__done__Player1 {
     background: #00c4a7;
 }
-.field-cell__done__rival {
+.field-cell__done__Player2 {
     background: #ff2b56;
 }
 .dot {
@@ -121,10 +121,10 @@
     cursor: default;
     z-index: 1
 }
-.edge__done__self {
+.edge__done__Player1 {
     background: #00d1b2!important
 }
-.edge__done__rival {
+.edge__done__Player2 {
     background: #ff3860!important
 }
 .edge__done__last.edge__v {

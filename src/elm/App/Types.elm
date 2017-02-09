@@ -127,7 +127,7 @@ defaultGameForm =
 
 
 type alias SelectedLines =
-    Dict Line PlayerId
+    Dict Line PlayerStatus
 
 
 {-| Maybe Player because its easier to compare owner and model.currentPlayer Later
@@ -140,7 +140,8 @@ type alias Game =
     , selectedLines : SelectedLines
     , status : GameStatus
     , players : PlayersInGame
-    , joinRequests : Dict String Player
+    , availablePlayerStatus : List PlayerStatus
+    , joinRequests : Dict JoinGameRequestId Player
     }
 
 
@@ -194,11 +195,6 @@ createPlayersInGame previous current next =
     PlayersInGame { previous = previous, current = current, next = next }
 
 
-getPreviousPlayers : PlayersInGame -> List PlayerInGame
-getPreviousPlayers (PlayersInGame { previous }) =
-    previous
-
-
 getCurrentPlayer : PlayersInGame -> PlayerInGame
 getCurrentPlayer (PlayersInGame { current }) =
     current
@@ -207,6 +203,26 @@ getCurrentPlayer (PlayersInGame { current }) =
 updateCurrentPlayer : PlayersInGame -> PlayerInGame -> PlayersInGame
 updateCurrentPlayer (PlayersInGame { previous, next }) newCurrent =
     createPlayersInGame previous newCurrent next
+
+
+addPlayer : PlayersInGame -> PlayerInGame -> PlayersInGame
+addPlayer (PlayersInGame { previous, current, next }) player =
+    let
+        newNext =
+            next
+                |> List.reverse
+                |> (::) player
+                |> List.reverse
+    in
+        createPlayersInGame previous current newNext
+
+
+type alias JoinGameRequestId =
+    String
+
+
+type alias JoinGameRequestEntry =
+    ( JoinGameRequestId, Player )
 
 
 type alias JoinGameRequest =
@@ -221,8 +237,8 @@ type Msg
     | CurrentPlayerRegistered Player
     | OpenGame
     | StartGame
-    | RequestToJoinGame GameId
-    | AcceptPlayer Player
+    | RequestToJoinGame Game
+    | AcceptPlayer JoinGameRequestEntry
     | GameOpened String
     | GameChanged JD.Value
     | Select Line
