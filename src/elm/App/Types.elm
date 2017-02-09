@@ -8,7 +8,7 @@ import Form.Validation exposing (..)
 type alias Model =
     { game : Maybe Game
     , gameForm : GameForm
-    , currentPlayer : Maybe Player
+    , localPlayer : Maybe Player
     , playerForm : PlayerForm
     , openGames : List Game
     }
@@ -130,8 +130,6 @@ type alias SelectedLines =
     Dict Line PlayerStatus
 
 
-{-| Maybe Player because its easier to compare owner and model.currentPlayer Later
--}
 type alias Game =
     { id : GameId
     , owner : Player
@@ -232,9 +230,9 @@ type alias JoinGameRequest =
 
 
 type Msg
-    = RegisterCurrentPlayer
+    = RegisterLocalPlayer
     | InputPlayerName String
-    | CurrentPlayerRegistered Player
+    | LocalPlayerRegistered Player
     | OpenGame
     | StartGame
     | RequestToJoinGame Game

@@ -31,10 +31,10 @@ app.ports.changeGame.subscribe(game => {
         });
 });
 
-app.ports.registerPlayer.subscribe(player => {
+app.ports.registerLocalPlayer.subscribe(player => {
     players.register(player)
         .then(function(val) {
-            app.ports.playerRegistered.send({
+            app.ports.localPlayerRegistered.send({
                 id: val.key,
                 name: player.name
             });

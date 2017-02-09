@@ -47,7 +47,7 @@ viewLobby model =
 
 viewLobbyBody : Model -> Html Msg
 viewLobbyBody model =
-    case model.currentPlayer of
+    case model.localPlayer of
         Nothing ->
             div [ class "columns" ]
                 [ div [ class "column is-half is-offset-one-quarter" ]
@@ -97,7 +97,7 @@ viewPlayerForm form =
                 ]
                 [ text <| "Let's go " ++ form.name ]
     in
-        Html.form [ onSubmit RegisterCurrentPlayer ]
+        Html.form [ onSubmit RegisterLocalPlayer ]
             [ nameInput
             , div [ class "control is-grouped" ]
                 [ submitButton

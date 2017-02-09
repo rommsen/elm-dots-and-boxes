@@ -13,7 +13,7 @@ initialModel : Model
 initialModel =
     { game = Nothing
     , gameForm = defaultGameForm
-    , currentPlayer = Nothing
+    , localPlayer = Nothing
     , playerForm = defaultPlayerForm
     , openGames = []
     }
@@ -27,7 +27,7 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        RegisterCurrentPlayer ->
+        RegisterLocalPlayer ->
             let
                 form =
                     model.playerForm
@@ -40,13 +40,13 @@ update msg model =
             in
                 case extractPlayerFromForm playerForm of
                     Just player ->
-                        ( newModel, registerPlayer player )
+                        ( newModel, registerLocalPlayer player )
 
                     Nothing ->
                         ( newModel, Cmd.none )
 
-        CurrentPlayerRegistered currentPlayer ->
-            ( { model | currentPlayer = Just currentPlayer }, Cmd.none )
+        LocalPlayerRegistered localPlayer ->
+            ( { model | localPlayer = Just localPlayer }, Cmd.none )
 
         InputPlayerName name ->
             let
@@ -95,11 +95,11 @@ update msg model =
                 gameForm =
                     { form | errors = validateGameForm form }
             in
-                case ( extractBoardSizeFromForm gameForm, model.currentPlayer ) of
-                    ( Just boardSize, Just currentPlayer ) ->
+                case ( extractBoardSizeFromForm gameForm, model.localPlayer ) of
+                    ( Just boardSize, Just localPlayer ) ->
                         let
                             game =
-                                buildGame currentPlayer boardSize
+                                buildGame localPlayer boardSize
                         in
                             ( { model
                                 | game = Just game
@@ -114,9 +114,9 @@ update msg model =
                         ( { model | gameForm = gameForm }, Cmd.none )
 
         StartGame ->
-            case ( model.game, model.currentPlayer ) of
-                ( Just game, Just currentPlayer ) ->
-                    if game.owner == currentPlayer then
+            case ( model.game, model.localPlayer ) of
+                ( Just game, Just localPlayer ) ->
+                    if game.owner == localPlayer then
                         ( model
                         , { game | status = Running }
                             |> gameEncoder
@@ -129,12 +129,9 @@ update msg model =
                     ( model, Cmd.none )
 
         Select line ->
-            case model.game of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just game ->
-                    if lineCanNotBeSelected line game then
+            case ( model.localPlayer, model.game ) of
+                ( Just localPlayer, Just game ) ->
+                    if lineCanNotBeSelected line localPlayer game then
                         ( model, Cmd.none )
                     else
                         ( model
@@ -143,6 +140,9 @@ update msg model =
                             |> gameEncoder
                             |> changeGame
                         )
+
+                _ ->
+                    ( model, Cmd.none )
 
         GameChanged value ->
             case JD.decodeValue gameDecoder value of
@@ -193,7 +193,7 @@ update msg model =
                         ( model, Cmd.none )
 
         RequestToJoinGame game ->
-            case model.currentPlayer of
+            case model.localPlayer of
                 Nothing ->
                     ( model, Cmd.none )
 
@@ -288,9 +288,20 @@ buildBox x y =
         Nothing
 
 
-lineCanNotBeSelected : Line -> Game -> Bool
-lineCanNotBeSelected line game =
-    (game.status /= Running) || (Dict.member line game.selectedLines)
+lineCanNotBeSelected : Line -> Player -> Game -> Bool
+lineCanNotBeSelected line player game =
+    (game.status /= Running)
+        || (not <| localPlayerIsCurrentPlayer player game.players)
+        || (Dict.member line game.selectedLines)
+
+
+localPlayerIsCurrentPlayer : Player -> PlayersInGame -> Bool
+localPlayerIsCurrentPlayer localPlayer (PlayersInGame { current }) =
+    let
+        (PlayerInGame { player }) =
+            current
+    in
+        localPlayer == player
 
 
 selectLine : Line -> Game -> Game
@@ -497,7 +508,7 @@ subscriptions =
     Sub.batch
         [ gameOpened GameOpened
         , gameChanged GameChanged
-        , playerRegistered CurrentPlayerRegistered
+        , localPlayerRegistered LocalPlayerRegistered
         , openGameAdded OpenGameAdded
         ]
 
@@ -517,10 +528,10 @@ port gameOpened : (String -> msg) -> Sub msg
 port gameChanged : (JD.Value -> msg) -> Sub msg
 
 
-port registerPlayer : Player -> Cmd msg
+port registerLocalPlayer : Player -> Cmd msg
 
 
-port playerRegistered : (Player -> msg) -> Sub msg
+port localPlayerRegistered : (Player -> msg) -> Sub msg
 
 
 port openGameAdded : (JD.Value -> msg) -> Sub msg
