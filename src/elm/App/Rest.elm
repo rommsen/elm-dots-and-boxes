@@ -2,10 +2,12 @@ module App.Rest exposing (..)
 
 import App.Types exposing (..)
 import Exts.Json.Encode as EJE
+import Exts.Json.Decode as EJD
 import Json.Decode as JD
 import Json.Decode.Pipeline
 import Json.Encode as JE
 import Dict
+import Date.Extra.Format
 
 
 gameDecoder : JD.Decoder Game
@@ -13,6 +15,7 @@ gameDecoder =
     Json.Decode.Pipeline.decode Game
         |> Json.Decode.Pipeline.required "id" JD.string
         |> Json.Decode.Pipeline.required "owner" playerDecoder
+        |> Json.Decode.Pipeline.required "createdAt" EJD.decodeDate
         |> Json.Decode.Pipeline.required "boardSize" boardSizeDecoder
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
@@ -165,6 +168,7 @@ gameEncoder game =
     JE.object
         [ ( "id", JE.string game.id )
         , ( "owner", encodePlayer game.owner )
+        , ( "createdAt", JE.string <| Date.Extra.Format.isoString game.createdAt )
         , ( "boardSize", boardSizeEncoder game.boardSize )
         , ( "boxes", boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )

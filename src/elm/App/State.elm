@@ -7,6 +7,8 @@ import Form.Validation exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import List.Nonempty
+import Task
+import Date
 
 
 initialModel : Model
@@ -87,7 +89,7 @@ update msg model =
             in
                 ( { model | gameForm = newGameForm }, Cmd.none )
 
-        OpenGame ->
+        CreateGame ->
             let
                 form =
                     model.gameForm
@@ -101,17 +103,24 @@ update msg model =
                             game =
                                 buildGame localPlayer boardSize
                         in
-                            ( { model
-                                | game = Just game
-                                , gameForm = gameForm
-                              }
-                            , game
-                                |> gameEncoder
-                                |> openGame
+                            ( model
+                            , Date.now
+                                |> Task.perform (OpenGame localPlayer boardSize)
                             )
 
                     _ ->
                         ( { model | gameForm = gameForm }, Cmd.none )
+
+        OpenGame localPlayer boardSize openedAt ->
+            let
+                game =
+                    buildGame localPlayer boardSize openedAt
+            in
+                ( { model | game = Just game }
+                , game
+                    |> gameEncoder
+                    |> openGame
+                )
 
         StartGame ->
             case ( model.game, model.localPlayer ) of
@@ -240,14 +249,15 @@ addNewPlayerToGame ( joinRequestId, player ) game =
             game
 
 
-buildGame : Player -> BoardSize -> Game
-buildGame owner boardSize =
+buildGame : Player -> BoardSize -> Date.Date -> Game
+buildGame owner boardSize createdAt =
     let
         playerInGame =
             createPlayerInGame owner Player1 0
     in
         { id = ""
         , owner = owner
+        , createdAt = createdAt
         , boardSize = boardSize
         , boxes = buildBoxes boardSize
         , selectedLines = Dict.empty

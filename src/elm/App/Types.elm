@@ -1,5 +1,6 @@
 module App.Types exposing (..)
 
+import Date
 import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import Json.Decode as JD
@@ -133,6 +134,7 @@ type alias SelectedLines =
 type alias Game =
     { id : GameId
     , owner : Player
+    , createdAt : Date.Date
     , boardSize : BoardSize
     , boxes : Boxes
     , selectedLines : SelectedLines
@@ -255,7 +257,8 @@ type Msg
     = RegisterLocalPlayer
     | InputPlayerName String
     | LocalPlayerRegistered Player
-    | OpenGame
+    | CreateGame
+    | OpenGame Player BoardSize Date.Date
     | StartGame
     | RequestToJoinGame Game
     | AcceptPlayer JoinGameRequestEntry

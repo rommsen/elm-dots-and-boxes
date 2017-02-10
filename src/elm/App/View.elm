@@ -64,7 +64,7 @@ viewLobbyBody model =
                     ]
                 , div [ class "columns" ]
                     [ div [ class "column is-half is-offset-one-quarter" ]
-                        [ viewGameTable model.openGames
+                        [ viewOpenGameTable model.openGames
                         ]
                     ]
                 ]
@@ -149,7 +149,7 @@ viewGameForm form =
                 ]
                 [ text "Open new game" ]
     in
-        Html.form [ onSubmit OpenGame ]
+        Html.form [ onSubmit CreateGame ]
             [ widthInput
             , heightInput
             , div [ class "control is-grouped" ]
@@ -158,13 +158,18 @@ viewGameForm form =
             ]
 
 
-viewGameTable : List Game -> Html Msg
-viewGameTable games =
+viewOpenGameTable : List Game -> Html Msg
+viewOpenGameTable games =
     table
         [ class "table is-striped " ]
         [ thead []
-            [ tr []
-                [ th [ colspan 2 ] [ text "Open games" ] ]
+            [ tr [] [ th [ colspan 4 ] [ text "Open games" ] ]
+            , tr []
+                [ th [] [ text "owner" ]
+                , th [] [ text "board size" ]
+                , th [] [ text "created at" ]
+                , th [] [ text "action" ]
+                ]
             ]
         , List.map viewGameRow games
             |> tbody []
@@ -173,11 +178,11 @@ viewGameTable games =
 
 viewGameRow : Game -> Html Msg
 viewGameRow game =
-    tr
-        []
-        [ td [] [ text <| viewGameDescription game ]
-        , td
-            []
+    tr []
+        [ td [] [ text game.owner.name ]
+        , td [] [ text <| toString game.boardSize.width ++ " x " ++ toString game.boardSize.height ]
+        , td [] [ text <| toString game.createdAt ]
+        , td []
             [ button
                 [ class "button is-primary"
                 , onClick <| RequestToJoinGame game
