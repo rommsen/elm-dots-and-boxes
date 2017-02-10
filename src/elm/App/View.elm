@@ -28,12 +28,12 @@ viewHeader model =
 
 viewBody : Model -> Html Msg
 viewBody model =
-    case model.game of
-        Nothing ->
-            viewLobby model
+    case ( model.game, model.localPlayer ) of
+        ( Just game, Just localPlayer ) ->
+            viewGame game localPlayer
 
-        Just game ->
-            viewGame game
+        _ ->
+            viewLobby model
 
 
 viewLobby : Model -> Html Msg
@@ -162,15 +162,9 @@ viewGameTable : List Game -> Html Msg
 viewGameTable games =
     table
         [ class "table is-striped " ]
-        [ thead
-            []
-            [ tr
-                []
-                [ th
-                    [ colspan 2 ]
-                    [ text "Open games"
-                    ]
-                ]
+        [ thead []
+            [ tr []
+                [ th [ colspan 2 ] [ text "Open games" ] ]
             ]
         , List.map viewGameRow games
             |> tbody []
@@ -181,9 +175,7 @@ viewGameRow : Game -> Html Msg
 viewGameRow game =
     tr
         []
-        [ td
-            []
-            [ text <| viewGameDescription game ]
+        [ td [] [ text <| viewGameDescription game ]
         , td
             []
             [ button
@@ -210,128 +202,189 @@ viewGameDescription game =
         boardSize ++ " " ++ owner
 
 
-viewGame : Game -> Html Msg
-viewGame game =
+viewGame : Game -> Player -> Html Msg
+viewGame game localPlayer =
     case game.status of
         Open ->
-            viewGameInProcess game
+            viewGameInProcess game localPlayer
 
         Winner player ->
-            viewGameInProcess game
+            viewGameInProcess game localPlayer
 
         Draw ->
-            viewGameInProcess game
+            viewGameInProcess game localPlayer
 
         Running ->
-            viewGameInProcess game
+            viewGameInProcess game localPlayer
 
 
-viewGameInProcess : Game -> Html Msg
-viewGameInProcess game =
+viewGameInProcess : Game -> Player -> Html Msg
+viewGameInProcess game localPlayer =
     section
         [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
+                [ viewInfoBox game localPlayer ]
+            , div [ class "columns" ]
                 [ viewGameBoard game
-                , viewGameStats game
+                , viewGameStats game localPlayer
                 ]
             , div [ class "columns" ]
                 [ div [ class "column model" ]
-                    [ text <| toString game
-                    ]
+                    [ text <| toString game ]
                 ]
             ]
         ]
 
 
-viewGameStats : Game -> Html Msg
-viewGameStats game =
+viewInfoBox : Game -> Player -> Html Msg
+viewInfoBox game localPlayer =
     let
         (PlayerInGame { player }) =
             getCurrentPlayer game.players
 
+        status =
+            toString game.status
+                |> text
+                |> viewInfoBoxItem "Status"
+
         startButton =
-            if game.status == Open then
+            if game.owner == localPlayer && game.status == Open then
                 button
-                    [ class "button is-primary"
-                    , onClick StartGame
-                    ]
-                    [ text "Start Game"
-                    ]
+                    [ class "button is-primary", onClick StartGame ]
+                    [ text "Start Game" ]
+                    |> viewInfoBoxItem "Action"
             else
                 text ""
 
-        rows =
-            [ tr
-                []
-                [ td
-                    []
-                    [ text "Turn" ]
-                , td
-                    []
-                    [ text <| player.name ]
-                ]
-            , tr
-                []
-                [ td
-                    []
-                    [ text "Points" ]
-                , td
-                    []
-                    []
-                ]
-            ]
+        turn =
+            if game.status == Running then
+                text player.name |> viewInfoBoxItem "Turn"
+            else
+                text ""
+
+        joinRequests =
+            if game.status == Open then
+                game.joinRequests
+                    |> Dict.size
+                    |> toString
+                    |> text
+                    |> viewInfoBoxItem "# Join Requests"
+            else
+                text ""
+
+        players =
+            game.players
+                |> numberPlayers
+                |> toString
+                |> text
+                |> viewInfoBoxItem "# Players"
     in
         div [ class "column" ]
             [ div [ class "box" ]
-                [ table
-                    [ class "table is-striped is-narrow" ]
-                    [ thead
-                        []
-                        [ tr
-                            []
-                            [ th
-                                []
-                                [ game.status
-                                    |> toString
-                                    |> text
-                                ]
-                            , th
-                                []
-                                [ startButton
-                                ]
-                            ]
-                        ]
-                    , tbody [] (rows ++ viewPlayers game)
+                [ nav
+                    [ class "level is-mobile" ]
+                    [ startButton
+                    , status
+                    , turn
+                    , players
+                    , joinRequests
                     ]
                 ]
             ]
 
 
-viewPlayers : Game -> List (Html Msg)
-viewPlayers game =
-    game.joinRequests
-        |> Dict.toList
-        |> List.map (viewPlayer game)
-
-
-viewPlayer : Game -> JoinGameRequestEntry -> Html Msg
-viewPlayer game joinGameRequestEntry =
-    tr
-        []
-        [ td
+viewInfoBoxItem : String -> Html Msg -> Html Msg
+viewInfoBoxItem heading content =
+    div
+        [ class "level-item has-text-centered" ]
+        [ div
             []
-            [ text <| .name (Tuple.second joinGameRequestEntry) ]
-        , td
-            []
-            [ button
-                [ class "button is-primary"
-                , onClick <| AcceptPlayer joinGameRequestEntry
-                ]
-                [ text "Accept"
-                ]
+            [ p [ class "heading" ] [ text heading ]
+            , p [ class "title" ] [ content ]
             ]
         ]
+
+
+viewGameStats : Game -> Player -> Html Msg
+viewGameStats game localPlayer =
+    div [ class "column" ]
+        [ div [ class "box" ]
+            [ viewPlayerTable game.players
+            , viewJoinRequestTable game localPlayer
+            ]
+        ]
+
+
+viewPlayerTable : PlayersInGame -> Html Msg
+viewPlayerTable playersInGame =
+    let
+        playerList =
+            playerListSortedByPlayerPoints playersInGame
+                |> List.indexedMap viewPlayer
+    in
+        table
+            [ class "table is-striped is-narrow" ]
+            [ thead
+                []
+                [ tr
+                    []
+                    [ th [] [ text "#" ]
+                    , th [] [ text "Player" ]
+                    , th [] [ text "Points" ]
+                    ]
+                ]
+            , tbody [] playerList
+            ]
+
+
+viewPlayer : Int -> PlayerInGame -> Html Msg
+viewPlayer pos (PlayerInGame { player, points }) =
+    tr []
+        [ td [] [ text <| toString (pos + 1) ]
+        , td [] [ text player.name ]
+        , td [] [ text <| toString points ]
+        ]
+
+
+viewJoinRequestTable : Game -> Player -> Html Msg
+viewJoinRequestTable game localPlayer =
+    if not <| Dict.isEmpty game.joinRequests then
+        table
+            [ class "table is-striped is-narrow" ]
+            [ thead
+                []
+                [ tr
+                    []
+                    [ th [ colspan 2 ] [ text "Join requests" ] ]
+                ]
+            , tbody []
+                (game.joinRequests
+                    |> Dict.toList
+                    |> List.map (viewJoinRequest game.owner localPlayer)
+                )
+            ]
+    else
+        text ""
+
+
+viewJoinRequest : Player -> Player -> JoinGameRequestEntry -> Html Msg
+viewJoinRequest owner localPlayer joinGameRequestEntry =
+    let
+        acceptButton =
+            if owner == localPlayer then
+                button
+                    [ class "button is-primary is-small"
+                    , onClick <| AcceptPlayer joinGameRequestEntry
+                    ]
+                    [ text "Accept" ]
+            else
+                text ""
+    in
+        tr []
+            [ td [] [ text <| .name (Tuple.second joinGameRequestEntry) ]
+            , td [] [ acceptButton ]
+            ]
 
 
 viewGameBoard : Game -> Html Msg
@@ -371,8 +424,7 @@ viewTableBody game =
 
 viewTableRows : Game -> Coordinate -> List Box -> Html Msg
 viewTableRows game y boxes =
-    tr
-        [ class "field-row" ]
+    tr [ class "field-row" ]
         (List.indexedMap (viewTableCell game y) boxes)
 
 

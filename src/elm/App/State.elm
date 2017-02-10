@@ -206,16 +206,19 @@ update msg model =
                     )
 
         AcceptPlayer joinGameRequestEntry ->
-            case model.game of
-                Nothing ->
-                    ( model, Cmd.none )
+            case ( model.game, model.localPlayer ) of
+                ( Just game, Just localPlayer ) ->
+                    if game.owner == localPlayer then
+                        ( model
+                        , addNewPlayerToGame joinGameRequestEntry game
+                            |> gameEncoder
+                            |> changeGame
+                        )
+                    else
+                        ( model, Cmd.none )
 
-                Just game ->
-                    ( model
-                    , addNewPlayerToGame joinGameRequestEntry game
-                        |> gameEncoder
-                        |> changeGame
-                    )
+                _ ->
+                    ( model, Cmd.none )
 
 
 addNewPlayerToGame : JoinGameRequestEntry -> Game -> Game

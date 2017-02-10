@@ -1,8 +1,8 @@
 module App.Types exposing (..)
 
 import Dict exposing (Dict)
-import Json.Decode as JD
 import Form.Validation exposing (..)
+import Json.Decode as JD
 
 
 type alias Model =
@@ -213,6 +213,28 @@ addPlayer (PlayersInGame { previous, current, next }) player =
                 |> List.reverse
     in
         createPlayersInGame previous current newNext
+
+
+numberPlayers : PlayersInGame -> Int
+numberPlayers (PlayersInGame { previous, current, next }) =
+    previous
+        |> (::) current
+        |> (++) next
+        |> List.length
+
+
+playerListSortedByPlayerPoints : PlayersInGame -> List PlayerInGame
+playerListSortedByPlayerPoints (PlayersInGame { previous, current, next }) =
+    previous
+        |> (::) current
+        |> (++) next
+        |> List.sortWith comparePlayerPoints
+        |> List.reverse
+
+
+comparePlayerPoints : PlayerInGame -> PlayerInGame -> Order
+comparePlayerPoints (PlayerInGame playerA) (PlayerInGame playerB) =
+    compare playerA.points playerB.points
 
 
 type alias JoinGameRequestId =
