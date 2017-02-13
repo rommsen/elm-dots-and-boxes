@@ -139,6 +139,7 @@ type alias Game =
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
+    , result : GameResult
     , players : PlayersInGame
     , availablePlayerStatus : List PlayerStatus
     , joinRequests : Dict JoinGameRequestId Player
@@ -152,8 +153,13 @@ type alias GameId =
 type GameStatus
     = Open
     | Running
-    | Winner PlayerStatus
-    | Draw
+    | Finished
+
+
+type GameResult
+    = None
+    | Winner PlayerInGame
+    | Draw (List PlayerInGame)
 
 
 type PlayerStatus
@@ -232,6 +238,31 @@ playerListSortedByPlayerPoints (PlayersInGame { previous, current, next }) =
         |> (++) next
         |> List.sortWith comparePlayerPoints
         |> List.reverse
+
+
+getWinner : PlayersInGame -> List PlayerInGame
+getWinner (PlayersInGame { previous, current, next }) =
+    let
+        getPlayersWithHighestPoints : PlayerInGame -> List PlayerInGame -> List PlayerInGame
+        getPlayersWithHighestPoints player list =
+            case list of
+                topPlayer :: tail ->
+                    case comparePlayerPoints player topPlayer of
+                        EQ ->
+                            player :: list
+
+                        LT ->
+                            list
+
+                        GT ->
+                            [ player ]
+
+                [] ->
+                    [ player ]
+    in
+        previous
+            |> (++) next
+            |> getPlayersWithHighestPoints current
 
 
 comparePlayerPoints : PlayerInGame -> PlayerInGame -> Order

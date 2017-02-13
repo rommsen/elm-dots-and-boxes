@@ -20,6 +20,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
+        |> Json.Decode.Pipeline.hardcoded None
         |> Json.Decode.Pipeline.required "players" playersInGameDecoder
         |> Json.Decode.Pipeline.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
         |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
@@ -139,15 +140,15 @@ playerInGameWithIdAsKeyDecoder =
         (JD.index 1 playerInGameDecoder)
 
 
+playerPointsDecoder : JD.Decoder PlayerPoints
+playerPointsDecoder =
+    JD.int
+
+
 gameStatusDecoder : JD.Decoder GameStatus
 gameStatusDecoder =
     JD.string
         |> JD.andThen gameStatusStringDecoder
-
-
-playerPointsDecoder : JD.Decoder PlayerPoints
-playerPointsDecoder =
-    JD.int
 
 
 gameStatusStringDecoder : String -> JD.Decoder GameStatus
@@ -158,6 +159,9 @@ gameStatusStringDecoder string =
 
         "Running" ->
             JD.succeed Running
+
+        "Finished" ->
+            JD.succeed Finished
 
         _ ->
             JD.fail "game status not available"
@@ -172,7 +176,8 @@ gameEncoder game =
         , ( "boardSize", boardSizeEncoder game.boardSize )
         , ( "boxes", boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
-        , ( "status", encodeGameStatus game.status )
+        , ( "status", gameStatusEncoder game.status )
+        , ( "result", gameResultEncoder game.result )
         , ( "players", playersInGameEncoder game.players )
         , ( "availablePlayerStatus", JE.list <| List.map playerStatusEncoder game.availablePlayerStatus )
         , ( "joinRequests", joinRequestsEncoder game.joinRequests )
@@ -243,10 +248,29 @@ playerStatusEncoder playerStatus =
         |> JE.string
 
 
-encodeGameStatus : GameStatus -> JE.Value
-encodeGameStatus gameStatus =
-    toString gameStatus
+gameStatusEncoder : GameStatus -> JE.Value
+gameStatusEncoder gameStatus =
+    gameStatus
+        |> toString
         |> JE.string
+
+
+gameResultEncoder : GameResult -> JE.Value
+gameResultEncoder result =
+    case result of
+        None ->
+            JE.list [ JE.string "None" ]
+
+        Winner player ->
+            JE.list [ JE.string "Winner", playerInGameEncoder player ]
+
+        Draw players ->
+            JE.list
+                [ JE.string "Draw"
+                , players
+                    |> List.map playerInGameEncoder
+                    |> JE.list
+                ]
 
 
 playersEncoder : List Player -> JE.Value

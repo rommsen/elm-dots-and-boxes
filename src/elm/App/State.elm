@@ -262,6 +262,7 @@ buildGame owner boardSize createdAt =
         , boxes = buildBoxes boardSize
         , selectedLines = Dict.empty
         , status = Open
+        , result = None
         , players = createPlayersInGame [] playerInGame []
         , availablePlayerStatus = [ Player2 ]
         , joinRequests = Dict.empty
@@ -334,7 +335,7 @@ selectLine line oldGame =
 evaluateRound : Game -> Game -> Game
 evaluateRound oldGame newGame =
     if gameHasFinished newGame.boxes then
-        { newGame | status = getWinner newGame }
+        { newGame | status = Finished, result = evaluateGame newGame }
     else if boxWasFinished oldGame newGame then
         newGame
     else
@@ -470,9 +471,14 @@ countFinishedBoxes game =
         |> List.length
 
 
-getWinner : Game -> GameStatus
-getWinner game =
-    Winner Player1
+evaluateGame : Game -> GameResult
+evaluateGame game =
+    case getWinner game.players of
+        [ winner ] ->
+            Winner winner
+
+        winners ->
+            Draw winners
 
 
 boxIsDone : Box -> SelectedLines -> Bool

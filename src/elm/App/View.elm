@@ -250,18 +250,7 @@ viewGameDescription game =
 
 viewGame : Game -> Player -> Html Msg
 viewGame game localPlayer =
-    case game.status of
-        Open ->
-            viewGameInProcess game localPlayer
-
-        Winner player ->
-            viewGameInProcess game localPlayer
-
-        Draw ->
-            viewGameInProcess game localPlayer
-
-        Running ->
-            viewGameInProcess game localPlayer
+    viewGameInProcess game localPlayer
 
 
 viewGameInProcess : Game -> Player -> Html Msg
