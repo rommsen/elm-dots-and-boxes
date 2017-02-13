@@ -47,27 +47,31 @@ viewLobby model =
 
 viewLobbyBody : Model -> Html Msg
 viewLobbyBody model =
-    case model.localPlayer of
-        Nothing ->
-            div [ class "columns" ]
-                [ div [ class "column is-half is-offset-one-quarter" ]
-                    [ viewPlayerForm model.playerForm
+    let
+        lobbyElements =
+            case model.localPlayer of
+                Nothing ->
+                    [ viewLobbyInfoBox model
+                    , viewPlayerForm model.playerForm
                     ]
-                ]
 
-        Just player ->
-            div []
-                [ div [ class "columns" ]
-                    [ div [ class "column is-half is-offset-one-quarter" ]
-                        [ viewGameForm model.gameForm
-                        ]
+                Just player ->
+                    [ viewLobbyInfoBox model
+                    , viewGameForm model.gameForm
+                    , viewOpenGameTable model.openGames
                     ]
-                , div [ class "columns" ]
-                    [ div [ class "column is-half is-offset-one-quarter" ]
-                        [ viewOpenGameTable model.openGames
-                        ]
-                    ]
-                ]
+    in
+        lobbyElements
+            |> List.map viewLobbyElement
+            |> div []
+
+
+viewLobbyElement : Html Msg -> Html Msg
+viewLobbyElement element =
+    div [ class "columns" ]
+        [ div [ class "column is-half is-offset-one-quarter" ]
+            [ element ]
+        ]
 
 
 viewPlayerForm : PlayerForm -> Html Msg
@@ -101,6 +105,43 @@ viewPlayerForm form =
             [ nameInput
             , div [ class "control is-grouped" ]
                 [ submitButton
+                ]
+            ]
+
+
+viewLobbyInfoBox : Model -> Html Msg
+viewLobbyInfoBox model =
+    let
+        yourName =
+            case model.localPlayer of
+                Just player ->
+                    player.name
+
+                Nothing ->
+                    if String.isEmpty model.playerForm.name then
+                        "Nobody"
+                    else
+                        model.playerForm.name
+
+        you =
+            yourName
+                |> text
+                |> viewInfoBoxItem "You"
+
+        openGames =
+            model.openGames
+                |> List.length
+                |> toString
+                |> text
+                |> viewInfoBoxItem "# Open Games"
+    in
+        div [ class "column" ]
+            [ div [ class "box" ]
+                [ nav
+                    [ class "level is-mobile" ]
+                    [ you
+                    , openGames
+                    ]
                 ]
             ]
 
@@ -229,7 +270,7 @@ viewGameInProcess game localPlayer =
         [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
-                [ viewInfoBox game localPlayer ]
+                [ viewGameInfoBox game localPlayer ]
             , div [ class "columns" ]
                 [ viewGameBoard game
                 , viewGameStats game localPlayer
@@ -242,8 +283,8 @@ viewGameInProcess game localPlayer =
         ]
 
 
-viewInfoBox : Game -> Player -> Html Msg
-viewInfoBox game localPlayer =
+viewGameInfoBox : Game -> Player -> Html Msg
+viewGameInfoBox game localPlayer =
     let
         (PlayerInGame { player }) =
             getCurrentPlayer game.players

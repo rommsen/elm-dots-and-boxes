@@ -12,7 +12,8 @@ wrapFormElement elementLabel elementError element =
             case elementError of
                 Just (Error _ error) ->
                     [ element
-                    , i [ class "fa fa-warning" ] []
+                    , span [ class "icon is-small" ]
+                        [ i [ class "fa fa-warning" ] [] ]
                     , span [ class "help is-danger" ] [ text error ]
                     ]
 
@@ -25,7 +26,6 @@ wrapFormElement elementLabel elementError element =
                 [ classList
                     [ ( "control", True )
                     , ( "has-icon", elementError /= Nothing )
-                    , ( "has-icon-right", elementError /= Nothing )
                     ]
                 ]
                 withError

@@ -56,12 +56,12 @@ update msg model =
                     model.playerForm
 
                 newForm =
-                    { form
-                        | name = name
-                        , errors = validatePlayerForm form
-                    }
+                    { form | name = name }
+
+                withErrors =
+                    { newForm | errors = validatePlayerForm newForm }
             in
-                ( { model | playerForm = newForm }, Cmd.none )
+                ( { model | playerForm = withErrors }, Cmd.none )
 
         InputWidth width ->
             let
@@ -69,25 +69,25 @@ update msg model =
                     model.gameForm
 
                 newForm =
-                    { form
-                        | width = width
-                        , errors = validateGameForm form
-                    }
+                    { form | width = width }
+
+                withErrors =
+                    { newForm | errors = validateGameForm newForm }
             in
-                ( { model | gameForm = newForm }, Cmd.none )
+                ( { model | gameForm = withErrors }, Cmd.none )
 
         InputHeight height ->
             let
                 form =
                     model.gameForm
 
-                newGameForm =
-                    { form
-                        | height = height
-                        , errors = validateGameForm form
-                    }
+                newForm =
+                    { form | height = height }
+
+                withErrors =
+                    { newForm | errors = validateGameForm newForm }
             in
-                ( { model | gameForm = newGameForm }, Cmd.none )
+                ( { model | gameForm = withErrors }, Cmd.none )
 
         CreateGame ->
             let
