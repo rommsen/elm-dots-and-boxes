@@ -70,7 +70,7 @@ viewLobbyElement : Html Msg -> Html Msg
 viewLobbyElement element =
     div [ class "columns" ]
         [ div [ class "column is-half is-offset-one-quarter" ]
-            [ element ]
+            [ div [ class "box" ] [ element ] ]
         ]
 
 
@@ -135,14 +135,10 @@ viewLobbyInfoBox model =
                 |> text
                 |> viewInfoBoxItem "# Open Games"
     in
-        div [ class "column" ]
-            [ div [ class "box" ]
-                [ nav
-                    [ class "level is-mobile" ]
-                    [ you
-                    , openGames
-                    ]
-                ]
+        nav
+            [ class "level is-mobile" ]
+            [ you
+            , openGames
             ]
 
 
@@ -250,11 +246,6 @@ viewGameDescription game =
 
 viewGame : Game -> Player -> Html Msg
 viewGame game localPlayer =
-    viewGameInProcess game localPlayer
-
-
-viewGameInProcess : Game -> Player -> Html Msg
-viewGameInProcess game localPlayer =
     section
         [ class "section" ]
         [ div [ class "container" ]
@@ -288,6 +279,15 @@ viewGameInfoBox game localPlayer =
                 button
                     [ class "button is-primary", onClick StartGame ]
                     [ text "Start Game" ]
+                    |> viewInfoBoxItem "Action"
+            else
+                text ""
+
+        backButton =
+            if game.status == Finished then
+                button
+                    [ class "button is-primary", onClick BackToLobby ]
+                    [ text "Back to Lobby" ]
                     |> viewInfoBoxItem "Action"
             else
                 text ""
@@ -328,6 +328,7 @@ viewGameInfoBox game localPlayer =
                 [ nav
                     [ class "level is-mobile" ]
                     [ startButton
+                    , backButton
                     , status
                     , turn
                     , result

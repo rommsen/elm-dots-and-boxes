@@ -299,3 +299,4 @@ type Msg
     | InputWidth String
     | InputHeight String
     | OpenGameAdded JD.Value
+    | BackToLobby

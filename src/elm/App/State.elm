@@ -197,7 +197,7 @@ update msg model =
                 Err err ->
                     let
                         _ =
-                            Debug.crash err
+                            Debug.log "OpenGameAdded Error: " err
                     in
                         ( model, Cmd.none )
 
@@ -228,6 +228,9 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        BackToLobby ->
+            ( { model | game = Nothing }, Cmd.none )
 
 
 addNewPlayerToGame : JoinGameRequestEntry -> Game -> Game
