@@ -287,7 +287,7 @@ viewGameInfoBox game localPlayer =
                 text ""
 
         backButton =
-            if not <| playerIsPlayerInGame localPlayer game.players || game.status == Finished then
+            if (not <| playerIsPlayerInGame localPlayer game.players) || game.status == Finished then
                 button
                     [ class "button is-primary", onClick BackToLobby ]
                     [ text "Back to Lobby" ]
