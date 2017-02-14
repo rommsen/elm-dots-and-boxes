@@ -11,7 +11,7 @@ type alias Model =
     , gameForm : GameForm
     , localPlayer : Maybe Player
     , playerForm : PlayerForm
-    , openGames : List Game
+    , openGames : Dict GameId Game
     }
 
 
@@ -299,4 +299,5 @@ type Msg
     | InputWidth String
     | InputHeight String
     | OpenGameAdded JD.Value
+    | OpenGameRemoved GameId
     | BackToLobby

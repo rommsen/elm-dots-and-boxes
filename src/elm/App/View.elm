@@ -1,7 +1,7 @@
 module App.View exposing (viewHeader, viewBody)
 
 import App.Types exposing (..)
-import Dict
+import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import FormElements exposing (wrapFormElement)
 import Html exposing (..)
@@ -130,7 +130,7 @@ viewLobbyInfoBox model =
 
         openGames =
             model.openGames
-                |> List.length
+                |> Dict.size
                 |> toString
                 |> text
                 |> viewInfoBoxItem "# Open Games"
@@ -195,7 +195,7 @@ viewGameForm form =
             ]
 
 
-viewOpenGameTable : List Game -> Html Msg
+viewOpenGameTable : Dict GameId Game -> Html Msg
 viewOpenGameTable games =
     table
         [ class "table is-striped " ]
@@ -208,7 +208,9 @@ viewOpenGameTable games =
                 , th [] [ text "action" ]
                 ]
             ]
-        , List.map viewGameRow games
+        , games
+            |> Dict.values
+            |> List.map viewGameRow
             |> tbody []
         ]
 

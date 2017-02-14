@@ -17,7 +17,7 @@ initialModel =
     , gameForm = defaultGameForm
     , localPlayer = Nothing
     , playerForm = defaultPlayerForm
-    , openGames = []
+    , openGames = Dict.empty
     }
 
 
@@ -187,10 +187,8 @@ update msg model =
 
         OpenGameAdded value ->
             case JD.decodeValue gameDecoder value of
-                Ok openGame ->
-                    ( { model
-                        | openGames = openGame :: model.openGames
-                      }
+                Ok game ->
+                    ( { model | openGames = Dict.insert game.id game model.openGames }
                     , Cmd.none
                     )
 
@@ -200,6 +198,11 @@ update msg model =
                             Debug.log "OpenGameAdded Error: " err
                     in
                         ( model, Cmd.none )
+
+        OpenGameRemoved gameId ->
+            ( { model | openGames = Dict.remove gameId model.openGames }
+            , Cmd.none
+            )
 
         RequestToJoinGame game ->
             case model.localPlayer of
@@ -532,6 +535,7 @@ subscriptions =
         , gameChanged GameChanged
         , localPlayerRegistered LocalPlayerRegistered
         , openGameAdded OpenGameAdded
+        , openGameRemoved OpenGameRemoved
         ]
 
 
@@ -557,3 +561,6 @@ port localPlayerRegistered : (Player -> msg) -> Sub msg
 
 
 port openGameAdded : (JD.Value -> msg) -> Sub msg
+
+
+port openGameRemoved : (GameId -> msg) -> Sub msg
