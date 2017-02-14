@@ -12,6 +12,7 @@ type alias Model =
     , localPlayer : Maybe Player
     , playerForm : PlayerForm
     , openGames : Dict GameId Game
+    , runningGames : Dict GameId Game
     }
 
 
@@ -141,6 +142,7 @@ type alias Game =
     , players : PlayersInGame
     , availablePlayerStatus : List PlayerStatus
     , joinRequests : Dict JoinGameRequestId Player
+    , spectators : Dict JoinGameRequestId Player
     }
 
 
@@ -221,6 +223,15 @@ addPlayer (PlayersInGame { previous, current, next }) player =
         createPlayersInGame previous current newNext
 
 
+playerIsPlayerInGame : Player -> PlayersInGame -> Bool
+playerIsPlayerInGame player (PlayersInGame { previous, current, next }) =
+    previous
+        |> (::) current
+        |> (++) next
+        |> List.map (\(PlayerInGame playerInGame) -> playerInGame.player)
+        |> List.member player
+
+
 numberPlayers : PlayersInGame -> Int
 numberPlayers (PlayersInGame { previous, current, next }) =
     previous
@@ -290,6 +301,7 @@ type Msg
     | OpenGame Player Date.Date
     | StartGame
     | RequestToJoinGame Game
+    | WatchGame Game
     | AcceptPlayer JoinGameRequestEntry
     | GameOpened String
     | GameChanged JD.Value
@@ -298,4 +310,6 @@ type Msg
     | InputHeight Int
     | OpenGameAdded JD.Value
     | OpenGameRemoved GameId
+    | RunningGameAdded JD.Value
+    | RunningGameRemoved GameId
     | BackToLobby

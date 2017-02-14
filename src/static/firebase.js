@@ -32,6 +32,12 @@ export const games = {
             .push(request.player);
     },
 
+    watchGame: request => {
+        return database
+            .ref(GAMES_REFPATH + "/" + request.gameId + "/spectators")
+            .push(request.player);
+    },
+
     ref: database.ref(GAMES_REFPATH)
 }
 

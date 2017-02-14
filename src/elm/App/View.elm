@@ -58,7 +58,8 @@ viewLobbyBody model =
                 Just player ->
                     [ viewLobbyInfoBox model
                     , viewGameForm model.boardSize
-                    , viewOpenGameTable model.openGames
+                    , viewGameTable model.openGames "Open games"
+                    , viewGameTable model.runningGames "Running games"
                     ]
     in
         lobbyElements
@@ -182,12 +183,12 @@ viewSizeButton modelSize msg size =
         [ text <| toString size ]
 
 
-viewOpenGameTable : Dict GameId Game -> Html Msg
-viewOpenGameTable games =
+viewGameTable : Dict GameId Game -> String -> Html Msg
+viewGameTable games header =
     table
         [ class "table is-striped " ]
         [ thead []
-            [ tr [] [ th [ colspan 4 ] [ text "Open games" ] ]
+            [ tr [] [ th [ colspan 4 ] [ text header ] ]
             , tr []
                 [ th [] [ text "owner" ]
                 , th [] [ text "size" ]
@@ -204,18 +205,30 @@ viewOpenGameTable games =
 
 viewGameRow : Game -> Html Msg
 viewGameRow game =
-    tr []
-        [ td [] [ text game.owner.name ]
-        , td [] [ text <| toString game.boardSize.width ++ " x " ++ toString game.boardSize.height ]
-        , td [] [ text <| toString game.createdAt ]
-        , td []
-            [ button
-                [ class "button is-primary"
-                , onClick <| RequestToJoinGame game
+    let
+        joinButton =
+            if game.status == Open then
+                button
+                    [ class "button is-primary"
+                    , onClick <| RequestToJoinGame game
+                    ]
+                    [ text "Join" ]
+            else
+                text ""
+    in
+        tr []
+            [ td [] [ text game.owner.name ]
+            , td [] [ text <| toString game.boardSize.width ++ " x " ++ toString game.boardSize.height ]
+            , td [] [ text <| toString game.createdAt ]
+            , td []
+                [ joinButton
+                , button
+                    [ class "button is-info"
+                    , onClick <| WatchGame game
+                    ]
+                    [ text "Watch" ]
                 ]
-                [ text "Join" ]
             ]
-        ]
 
 
 viewGameDescription : Game -> String
@@ -244,10 +257,6 @@ viewGame game localPlayer =
                 [ viewGameBoard game
                 , viewGameStats game localPlayer
                 ]
-            , div [ class "columns" ]
-                [ div [ class "column model" ]
-                    [ text <| toString game ]
-                ]
             ]
         ]
 
@@ -273,7 +282,7 @@ viewGameInfoBox game localPlayer =
                 text ""
 
         backButton =
-            if game.status == Finished then
+            if not <| playerIsPlayerInGame localPlayer game.players || game.status == Finished then
                 button
                     [ class "button is-primary", onClick BackToLobby ]
                     [ text "Back to Lobby" ]
@@ -305,6 +314,13 @@ viewGameInfoBox game localPlayer =
             else
                 text ""
 
+        spectators =
+            game.spectators
+                |> Dict.size
+                |> toString
+                |> text
+                |> viewInfoBoxItem "# Spectators"
+
         players =
             game.players
                 |> numberPlayers
@@ -323,6 +339,7 @@ viewGameInfoBox game localPlayer =
                     , result
                     , players
                     , joinRequests
+                    , spectators
                     ]
                 ]
             ]
@@ -420,18 +437,18 @@ viewJoinRequestTable game localPlayer =
             , tbody []
                 (game.joinRequests
                     |> Dict.toList
-                    |> List.map (viewJoinRequest game.owner localPlayer)
+                    |> List.map (viewJoinRequest game.availablePlayerStatus game.owner localPlayer)
                 )
             ]
     else
         text ""
 
 
-viewJoinRequest : Player -> Player -> JoinGameRequestEntry -> Html Msg
-viewJoinRequest owner localPlayer joinGameRequestEntry =
+viewJoinRequest : List PlayerStatus -> Player -> Player -> JoinGameRequestEntry -> Html Msg
+viewJoinRequest availablePlayerStatus owner localPlayer joinGameRequestEntry =
     let
         acceptButton =
-            if owner == localPlayer then
+            if List.length availablePlayerStatus > 0 && owner == localPlayer then
                 button
                     [ class "button is-primary is-small"
                     , onClick <| AcceptPlayer joinGameRequestEntry

@@ -24,6 +24,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.required "players" playersInGameDecoder
         |> Json.Decode.Pipeline.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
         |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
+        |> Json.Decode.Pipeline.optional "spectators" joinRequestsDecoder Dict.empty
 
 
 boxesDecoder : JD.Decoder Boxes
@@ -211,6 +212,7 @@ gameEncoder game =
         , ( "players", playersInGameEncoder game.players )
         , ( "availablePlayerStatus", JE.list <| List.map playerStatusEncoder game.availablePlayerStatus )
         , ( "joinRequests", joinRequestsEncoder game.joinRequests )
+        , ( "spectators", joinRequestsEncoder game.spectators )
         ]
 
 

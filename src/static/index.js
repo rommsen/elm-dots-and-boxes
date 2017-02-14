@@ -50,6 +50,13 @@ app.ports.requestToJoinGame.subscribe(request => {
         });
 });
 
+app.ports.watchGame.subscribe(request => {
+    games.watchGame(request)
+        .catch(err => {
+            console.error("watchGame:", err);
+        });
+});
+
 
 games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
     const game = Object.assign({}, data.val(), {
@@ -60,6 +67,17 @@ games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
 
 games.ref.orderByChild("status").equalTo("Open").on("child_removed", data => {
     app.ports.openGameRemoved.send(data.key);
+});
+
+games.ref.orderByChild("status").equalTo("Running").on("child_added", data => {
+    const game = Object.assign({}, data.val(), {
+        id: data.key
+    });
+    app.ports.runningGameAdded.send(game);
+});
+
+games.ref.orderByChild("status").equalTo("Running").on("child_removed", data => {
+    app.ports.runningGameRemoved.send(data.key);
 });
 
 // games.ref.orderByChild("status").equalTo("Running").on("child_added", data => {

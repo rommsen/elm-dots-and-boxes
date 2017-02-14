@@ -18,6 +18,7 @@ initialModel =
     , localPlayer = Nothing
     , playerForm = defaultPlayerForm
     , openGames = Dict.empty
+    , runningGames = Dict.empty
     }
 
 
@@ -94,14 +95,22 @@ update msg model =
         StartGame ->
             case ( model.game, model.localPlayer ) of
                 ( Just game, Just localPlayer ) ->
-                    if game.owner == localPlayer then
-                        ( model
-                        , { game | status = Running }
-                            |> gameEncoder
-                            |> changeGame
-                        )
-                    else
-                        ( model, Cmd.none )
+                    let
+                        _ =
+                            Debug.log "union" (Dict.union game.joinRequests game.spectators)
+                    in
+                        if game.owner == localPlayer then
+                            ( model
+                            , { game
+                                | status = Running
+                                , spectators = Dict.union game.joinRequests game.spectators
+                                , joinRequests = Dict.empty
+                              }
+                                |> gameEncoder
+                                |> changeGame
+                            )
+                        else
+                            ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -173,17 +182,45 @@ update msg model =
             , Cmd.none
             )
 
+        RunningGameAdded value ->
+            case JD.decodeValue gameDecoder value of
+                Ok game ->
+                    ( { model | runningGames = Dict.insert game.id game model.runningGames }
+                    , Cmd.none
+                    )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.log "OpenGameAdded Error: " err
+                    in
+                        ( model, Cmd.none )
+
+        RunningGameRemoved gameId ->
+            ( { model | runningGames = Dict.remove gameId model.runningGames }
+            , Cmd.none
+            )
+
         RequestToJoinGame game ->
             case model.localPlayer of
                 Nothing ->
                     ( model, Cmd.none )
 
                 Just player ->
-                    ( { model
-                        | game = Just game
-                      }
+                    ( { model | game = Just game }
                     , JoinGameRequest game.id player
                         |> requestToJoinGame
+                    )
+
+        WatchGame game ->
+            case model.localPlayer of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just player ->
+                    ( { model | game = Just game }
+                    , JoinGameRequest game.id player
+                        |> watchGame
                     )
 
         AcceptPlayer joinGameRequestEntry ->
@@ -241,6 +278,7 @@ buildGame owner boardSize createdAt =
         , players = createPlayersInGame [] playerInGame []
         , availablePlayerStatus = [ Player2 ]
         , joinRequests = Dict.empty
+        , spectators = Dict.empty
         }
 
 
@@ -489,10 +527,18 @@ subscriptions =
         , localPlayerRegistered LocalPlayerRegistered
         , openGameAdded OpenGameAdded
         , openGameRemoved OpenGameRemoved
+        , localPlayerRegistered LocalPlayerRegistered
+        , openGameAdded OpenGameAdded
+        , openGameRemoved OpenGameRemoved
+        , runningGameAdded RunningGameAdded
+        , runningGameRemoved RunningGameRemoved
         ]
 
 
 port requestToJoinGame : JoinGameRequest -> Cmd msg
+
+
+port watchGame : JoinGameRequest -> Cmd msg
 
 
 port openGame : JE.Value -> Cmd msg
@@ -517,3 +563,9 @@ port openGameAdded : (JD.Value -> msg) -> Sub msg
 
 
 port openGameRemoved : (GameId -> msg) -> Sub msg
+
+
+port runningGameAdded : (JD.Value -> msg) -> Sub msg
+
+
+port runningGameRemoved : (GameId -> msg) -> Sub msg
