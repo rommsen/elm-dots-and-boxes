@@ -1,6 +1,9 @@
 module App.View exposing (viewHeader, viewBody)
 
 import App.Types exposing (..)
+import Date
+import Date.Extra.Config.Config_en_us
+import Date.Extra.Format
 import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import FormElements exposing (wrapFormElement)
@@ -198,6 +201,8 @@ viewGameTable games header =
             ]
         , games
             |> Dict.values
+            |> List.sortBy (\game -> toString game.createdAt)
+            |> List.reverse
             |> List.map viewGameRow
             |> tbody []
         ]
@@ -209,7 +214,7 @@ viewGameRow game =
         joinButton =
             if game.status == Open then
                 button
-                    [ class "button is-primary"
+                    [ class "button is-primary is-small"
                     , onClick <| RequestToJoinGame game
                     ]
                     [ text "Join" ]
@@ -219,11 +224,11 @@ viewGameRow game =
         tr []
             [ td [] [ text game.owner.name ]
             , td [] [ text <| toString game.boardSize.width ++ " x " ++ toString game.boardSize.height ]
-            , td [] [ text <| toString game.createdAt ]
+            , td [] [ text <| formatDateTime game.createdAt ]
             , td []
                 [ joinButton
                 , button
-                    [ class "button is-info"
+                    [ class "button is-info is-small"
                     , onClick <| WatchGame game
                     ]
                     [ text "Watch" ]
@@ -596,3 +601,10 @@ lineClasses line selectedLines =
             [ ( "edge__done", True )
             , ( "edge__done edge__done__" ++ toString playerStatus, True )
             ]
+
+
+formatDateTime : Date.Date -> String
+formatDateTime date =
+    Date.Extra.Format.format Date.Extra.Config.Config_en_us.config Date.Extra.Format.isoDateFormat date
+        ++ " "
+        ++ Date.Extra.Format.format Date.Extra.Config.Config_en_us.config Date.Extra.Format.isoTimeFormat date
