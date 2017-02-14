@@ -2,12 +2,12 @@ module App.View exposing (viewHeader, viewBody)
 
 import App.Types exposing (..)
 import Dict
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onSubmit, onInput)
-import List.Extra
 import Form.Validation exposing (..)
 import FormElements exposing (wrapFormElement)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onClick, onInput, onSubmit)
+import List.Extra
 
 
 viewHeader : Model -> Html Msg
@@ -292,6 +292,14 @@ viewGameInfoBox game localPlayer =
             else
                 text ""
 
+        result =
+            if game.status == Finished then
+                viewGameResult game.result
+                    |> text
+                    |> viewInfoBoxItem "Result"
+            else
+                text ""
+
         turn =
             if game.status == Running then
                 text player.name |> viewInfoBoxItem "Turn"
@@ -322,11 +330,37 @@ viewGameInfoBox game localPlayer =
                     [ startButton
                     , status
                     , turn
+                    , result
                     , players
                     , joinRequests
                     ]
                 ]
             ]
+
+
+viewGameResult : GameResult -> String
+viewGameResult result =
+    let
+        playerResult (PlayerInGame { player, points }) =
+            player.name ++ " (" ++ toString points ++ " points)"
+    in
+        case result of
+            None ->
+                "None"
+
+            Winner player ->
+                "Winner: " ++ playerResult player
+
+            Draw players ->
+                players
+                    |> List.map playerResult
+                    |> List.intersperse ", "
+                    |> List.foldr (++) ""
+                    |> (++) "Draw: "
+
+
+
+-- |> (++) "Draw: "
 
 
 viewInfoBoxItem : String -> Html Msg -> Html Msg

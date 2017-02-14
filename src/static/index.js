@@ -67,6 +67,10 @@ games.ref.orderByChild("status").equalTo("Open").on("child_removed", data => {
     console.log('removed', data.val())
 });
 
+games.ref.orderByChild("status").equalTo("Finished").on("child_added", data => {
+    console.log('result', JSON.stringify(data.val()['result']))
+});
+
 
 games.ref.on("child_changed", data => {
     const game = Object.assign({}, data.val(), {

@@ -20,7 +20,7 @@ gameDecoder =
         |> Json.Decode.Pipeline.required "boxes" boxesDecoder
         |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> Json.Decode.Pipeline.required "status" gameStatusDecoder
-        |> Json.Decode.Pipeline.hardcoded None
+        |> Json.Decode.Pipeline.required "result" gameResultDecoder
         |> Json.Decode.Pipeline.required "players" playersInGameDecoder
         |> Json.Decode.Pipeline.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
         |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
@@ -128,6 +128,12 @@ playerStatusStringDecoder string =
             JD.fail "player not available"
 
 
+
+{-
+   erstmal in ein objekt, dann in ein union type?
+-}
+
+
 playersDecoder : JD.Decoder Players
 playersDecoder =
     JD.map Dict.fromList (JD.list playerInGameWithIdAsKeyDecoder)
@@ -143,6 +149,30 @@ playerInGameWithIdAsKeyDecoder =
 playerPointsDecoder : JD.Decoder PlayerPoints
 playerPointsDecoder =
     JD.int
+
+
+gameResultDecoder : JD.Decoder GameResult
+gameResultDecoder =
+    JD.index 0 JD.string
+        |> JD.andThen gameResultStringDecoder
+
+
+gameResultStringDecoder : String -> JD.Decoder GameResult
+gameResultStringDecoder string =
+    case string of
+        "None" ->
+            JD.succeed None
+
+        "Winner" ->
+            JD.map Winner
+                (JD.index 1 playerInGameDecoder)
+
+        "Draw" ->
+            JD.map Draw
+                (JD.index 1 (JD.list playerInGameDecoder))
+
+        _ ->
+            JD.fail "game result not available"
 
 
 gameStatusDecoder : JD.Decoder GameStatus
