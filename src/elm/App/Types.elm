@@ -8,7 +8,7 @@ import Json.Decode as JD
 
 type alias Model =
     { game : Maybe Game
-    , gameForm : GameForm
+    , boardSize : BoardSize
     , localPlayer : Maybe Player
     , playerForm : PlayerForm
     , openGames : Dict GameId Game
@@ -48,6 +48,16 @@ type alias BoardSize =
     { width : Int
     , height : Int
     }
+
+
+updateWidth : Int -> BoardSize -> BoardSize
+updateWidth newWidth { width, height } =
+    BoardSize newWidth height
+
+
+updateHeight : Int -> BoardSize -> BoardSize
+updateHeight newHeight { width, height } =
+    BoardSize width newHeight
 
 
 
@@ -113,18 +123,6 @@ type alias PlayerForm =
 defaultPlayerForm : PlayerForm
 defaultPlayerForm =
     PlayerForm "" []
-
-
-type alias GameForm =
-    { width : String
-    , height : String
-    , errors : List Error
-    }
-
-
-defaultGameForm : GameForm
-defaultGameForm =
-    GameForm "3" "3" []
 
 
 type alias SelectedLines =
@@ -289,15 +287,15 @@ type Msg
     | InputPlayerName String
     | LocalPlayerRegistered Player
     | CreateGame
-    | OpenGame Player BoardSize Date.Date
+    | OpenGame Player Date.Date
     | StartGame
     | RequestToJoinGame Game
     | AcceptPlayer JoinGameRequestEntry
     | GameOpened String
     | GameChanged JD.Value
     | Select Line
-    | InputWidth String
-    | InputHeight String
+    | InputWidth Int
+    | InputHeight Int
     | OpenGameAdded JD.Value
     | OpenGameRemoved GameId
     | BackToLobby

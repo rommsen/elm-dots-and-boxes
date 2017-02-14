@@ -57,7 +57,7 @@ viewLobbyBody model =
 
                 Just player ->
                     [ viewLobbyInfoBox model
-                    , viewGameForm model.gameForm
+                    , viewGameForm model.boardSize
                     , viewOpenGameTable model.openGames
                     ]
     in
@@ -136,63 +136,50 @@ viewLobbyInfoBox model =
                 |> viewInfoBoxItem "# Open Games"
     in
         nav
-            [ class "level is-mobile" ]
+            [ class "level" ]
             [ you
             , openGames
             ]
 
 
-viewGameForm : GameForm -> Html Msg
-viewGameForm form =
-    let
-        widthError =
-            findError "width" form.errors
-
-        heightError =
-            findError "height" form.errors
-
-        widthInput =
-            wrapFormElement "Width" widthError <|
-                input
-                    [ type_ "text"
-                    , classList
-                        [ ( "input", True )
-                        , ( "is-danger", widthError /= Nothing )
-                        ]
-                    , onInput InputWidth
-                    , placeholder "Width"
-                    , value form.width
-                    ]
-                    []
-
-        heightInput =
-            wrapFormElement "Height" heightError <|
-                input
-                    [ type_ "text"
-                    , classList
-                        [ ( "input", True )
-                        , ( "is-danger", heightError /= Nothing )
-                        ]
-                    , onInput InputHeight
-                    , placeholder "Height"
-                    , value form.height
-                    ]
-                    []
-
-        submitButton =
-            button
-                [ type_ "submit"
-                , class "button is-primary"
-                ]
-                [ text "Open new game" ]
-    in
-        Html.form [ onSubmit CreateGame ]
-            [ widthInput
-            , heightInput
-            , div [ class "control is-grouped" ]
-                [ submitButton
-                ]
+viewGameForm : BoardSize -> Html Msg
+viewGameForm { width, height } =
+    Html.form [ onSubmit CreateGame ]
+        [ h1 [ class "title" ] [ text "Choose game size" ]
+        , viewSizeButtons width InputWidth
+        , viewSizeButtons height InputHeight
+        , button
+            [ type_ "submit"
+            , class "button is-primary"
             ]
+            [ text "Open new game" ]
+        ]
+
+
+viewSizeButtons : Int -> (Int -> Msg) -> Html Msg
+viewSizeButtons modelSize msg =
+    let
+        buttons =
+            List.range 2 8
+                |> List.map (viewSizeButton modelSize msg)
+    in
+        div
+            [ class "control" ]
+            [ label [ class "label" ] [ text "Height" ]
+            , p
+                [ class "control has-addons" ]
+                buttons
+            ]
+
+
+viewSizeButton : Int -> (Int -> Msg) -> Int -> Html Msg
+viewSizeButton modelSize msg size =
+    a
+        [ class "button is-info"
+        , classList [ ( "is-outlined", size /= modelSize ) ]
+        , onClick <| msg size
+        ]
+        [ text <| toString size ]
 
 
 viewOpenGameTable : Dict GameId Game -> Html Msg
@@ -203,7 +190,7 @@ viewOpenGameTable games =
             [ tr [] [ th [ colspan 4 ] [ text "Open games" ] ]
             , tr []
                 [ th [] [ text "owner" ]
-                , th [] [ text "board size" ]
+                , th [] [ text "size" ]
                 , th [] [ text "created at" ]
                 , th [] [ text "action" ]
                 ]
@@ -328,7 +315,7 @@ viewGameInfoBox game localPlayer =
         div [ class "column" ]
             [ div [ class "box" ]
                 [ nav
-                    [ class "level is-mobile" ]
+                    [ class "level" ]
                     [ startButton
                     , backButton
                     , status

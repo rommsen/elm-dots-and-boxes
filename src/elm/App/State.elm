@@ -2,19 +2,19 @@ port module App.State exposing (init, update, subscriptions)
 
 import App.Rest exposing (..)
 import App.Types exposing (..)
+import Date
 import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import List.Nonempty
 import Task
-import Date
 
 
 initialModel : Model
 initialModel =
     { game = Nothing
-    , gameForm = defaultGameForm
+    , boardSize = BoardSize 3 3
     , localPlayer = Nothing
     , playerForm = defaultPlayerForm
     , openGames = Dict.empty
@@ -64,57 +64,26 @@ update msg model =
                 ( { model | playerForm = withErrors }, Cmd.none )
 
         InputWidth width ->
-            let
-                form =
-                    model.gameForm
-
-                newForm =
-                    { form | width = width }
-
-                withErrors =
-                    { newForm | errors = validateGameForm newForm }
-            in
-                ( { model | gameForm = withErrors }, Cmd.none )
+            ( { model | boardSize = updateWidth width model.boardSize }, Cmd.none )
 
         InputHeight height ->
-            let
-                form =
-                    model.gameForm
-
-                newForm =
-                    { form | height = height }
-
-                withErrors =
-                    { newForm | errors = validateGameForm newForm }
-            in
-                ( { model | gameForm = withErrors }, Cmd.none )
+            ( { model | boardSize = updateHeight height model.boardSize }, Cmd.none )
 
         CreateGame ->
-            let
-                form =
-                    model.gameForm
+            case model.localPlayer of
+                Just localPlayer ->
+                    ( model
+                    , Date.now
+                        |> Task.perform (OpenGame localPlayer)
+                    )
 
-                gameForm =
-                    { form | errors = validateGameForm form }
-            in
-                case ( extractBoardSizeFromForm gameForm, model.localPlayer ) of
-                    ( Just boardSize, Just localPlayer ) ->
-                        let
-                            game =
-                                buildGame localPlayer boardSize
-                        in
-                            ( model
-                            , Date.now
-                                |> Task.perform (OpenGame localPlayer boardSize)
-                            )
+                _ ->
+                    ( model, Cmd.none )
 
-                    _ ->
-                        ( { model | gameForm = gameForm }, Cmd.none )
-
-        OpenGame localPlayer boardSize openedAt ->
+        OpenGame localPlayer openedAt ->
             let
                 game =
-                    buildGame localPlayer boardSize openedAt
+                    buildGame localPlayer model.boardSize openedAt
             in
                 ( { model | game = Just game }
                 , game
@@ -493,22 +462,6 @@ boxIsDone box selectedLines =
         && Dict.member box.down selectedLines
         && Dict.member box.left selectedLines
         && Dict.member box.right selectedLines
-
-
-validateGameForm : GameForm -> List Error
-validateGameForm form =
-    begin form
-        |> validate (validateInt "width" << .width)
-        |> validate (validateInt "height" << .width)
-        |> extractErrors
-
-
-extractBoardSizeFromForm : GameForm -> Maybe BoardSize
-extractBoardSizeFromForm form =
-    Result.map2 BoardSize
-        (String.toInt form.width)
-        (String.toInt form.height)
-        |> Result.toMaybe
 
 
 validatePlayerForm : PlayerForm -> List Error
