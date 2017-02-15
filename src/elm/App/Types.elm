@@ -199,6 +199,13 @@ type PlayersInGame
         }
 
 
+playersInGameToList : PlayersInGame -> List PlayerInGame
+playersInGameToList (PlayersInGame { previous, current, next }) =
+    previous
+        |> (::) current
+        |> (++) next
+
+
 createPlayersInGame : List PlayerInGame -> PlayerInGame -> List PlayerInGame -> PlayersInGame
 createPlayersInGame previous current next =
     PlayersInGame { previous = previous, current = current, next = next }
@@ -227,44 +234,38 @@ addPlayer (PlayersInGame { previous, current, next }) player =
 
 
 playerIsPlayerInGame : Player -> PlayersInGame -> Bool
-playerIsPlayerInGame player (PlayersInGame { previous, current, next }) =
-    previous
-        |> (::) current
-        |> (++) next
+playerIsPlayerInGame player players =
+    playersInGameToList players
         |> List.map (\(PlayerInGame playerInGame) -> playerInGame.player)
         |> List.member player
 
 
 numberPlayers : PlayersInGame -> Int
-numberPlayers (PlayersInGame { previous, current, next }) =
-    previous
-        |> (::) current
-        |> (++) next
+numberPlayers players =
+    playersInGameToList players
         |> List.length
 
 
 playerListSortedByPlayerPoints : PlayersInGame -> List PlayerInGame
-playerListSortedByPlayerPoints (PlayersInGame { previous, current, next }) =
-    previous
-        |> (::) current
-        |> (++) next
+playerListSortedByPlayerPoints players =
+    playersInGameToList players
         |> List.sortWith comparePlayerPoints
         |> List.reverse
 
 
 getWinner : PlayersInGame -> List PlayerInGame
-getWinner (PlayersInGame { previous, current, next }) =
+getWinner players =
     let
         getPlayersWithHighestPoints : PlayerInGame -> List PlayerInGame -> List PlayerInGame
-        getPlayersWithHighestPoints player list =
-            case list of
+        getPlayersWithHighestPoints player topList =
+            case topList of
                 topPlayer :: tail ->
                     case comparePlayerPoints player topPlayer of
                         EQ ->
-                            player :: list
+                            player :: topList
 
                         LT ->
-                            list
+                            topList
 
                         GT ->
                             [ player ]
@@ -272,9 +273,9 @@ getWinner (PlayersInGame { previous, current, next }) =
                 [] ->
                     [ player ]
     in
-        previous
-            |> (++) next
-            |> getPlayersWithHighestPoints current
+        players
+            |> playersInGameToList
+            |> List.foldl getPlayersWithHighestPoints []
 
 
 comparePlayerPoints : PlayerInGame -> PlayerInGame -> Order
