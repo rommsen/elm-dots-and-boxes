@@ -63,6 +63,15 @@
 .field-cell__done__Player2 {
     background: #ff2b56;
 }
+.field-cell__done__Player3 {
+    background: #276cda;
+}
+.field-cell__done__Player4 {
+    background: #22c65b;
+}
+.field-cell__done__Player5 {
+    background: #ffdb4a;
+}
 .dot {
     height: 10px;
     width: 10px;
@@ -126,6 +135,15 @@
 }
 .edge__done__Player2 {
     background: #ff3860!important
+}
+.edge__done__Player3 {
+    background: #3273dc!important
+}
+.edge__done__Player4 {
+    background: #23d160!important
+}
+.edge__done__Player5 {
+    background: #ffdd57!important
 }
 .edge__done__last.edge__v {
     border-left: 4px double #fff;

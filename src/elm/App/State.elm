@@ -276,7 +276,7 @@ buildGame owner boardSize createdAt =
         , status = Open
         , result = None
         , players = createPlayersInGame [] playerInGame []
-        , availablePlayerStatus = [ Player2 ]
+        , availablePlayerStatus = [ Player2, Player3, Player4, Player5 ]
         , joinRequests = Dict.empty
         , spectators = Dict.empty
         }

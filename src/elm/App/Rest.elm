@@ -125,6 +125,15 @@ playerStatusStringDecoder string =
         "Player2" ->
             JD.succeed Player2
 
+        "Player3" ->
+            JD.succeed Player3
+
+        "Player4" ->
+            JD.succeed Player4
+
+        "Player5" ->
+            JD.succeed Player5
+
         _ ->
             JD.fail "player not available"
 
