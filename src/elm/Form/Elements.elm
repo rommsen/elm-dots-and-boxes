@@ -1,4 +1,4 @@
-module FormElements exposing (wrapFormElement)
+module Form.Elements exposing (wrapFormElement)
 
 import Form.Validation exposing (..)
 import Html exposing (..)

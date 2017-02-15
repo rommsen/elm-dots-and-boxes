@@ -1,6 +1,6 @@
-module App.Rest exposing (..)
+module Rest exposing (..)
 
-import App.Types exposing (..)
+import Types exposing (..)
 import Exts.Json.Encode as EJE
 import Exts.Json.Decode as EJD
 import Json.Decode as JD
