@@ -1,4 +1,4 @@
-module App.View exposing (viewHeader, viewBody)
+module App.View exposing (viewHeader, viewBody, viewFooter)
 
 import App.Types exposing (..)
 import Date
@@ -23,6 +23,53 @@ viewHeader model =
                         [ span [ class "nav-item is-brand" ]
                             [ text "Elm Dots and Boxes" ]
                         ]
+                    , div
+                        [ class "nav-center" ]
+                        [ a
+                            [ class "nav-item", href "https://github.com/rommsen/elm-dots-and-boxes" ]
+                            [ span [ class "icon" ] [ i [ class "fa fa-github" ] [] ] ]
+                        , a
+                            [ class "nav-item", href "https://twitter.com/R0MMSEN" ]
+                            [ span [ class "icon" ] [ i [ class "fa fa-twitter" ] [] ] ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
+viewFooter : Model -> Html Msg
+viewFooter model =
+    footer
+        [ class "footer" ]
+        [ div
+            [ class "container" ]
+            [ div
+                [ class "content has-text-centered" ]
+                [ p []
+                    [ strong [] [ text "Elm Dots and Boxes" ] ]
+                , p []
+                    [ text " with "
+                    , span
+                        [ class "icon s-small" ]
+                        [ i [ class "fa fa-heart" ] [] ]
+                    , text " by "
+                    , a
+                        [ href "https://github.com/rommsen" ]
+                        [ text "Roman Sachse" ]
+                    , text ". The source code is licensed "
+                    , a
+                        [ href "http://opensource.org/licenses/mit-license.php" ]
+                        [ text "MIT" ]
+                    , text "."
+                    ]
+                , p []
+                    [ a
+                        [ class "icon", href "https://github.com/rommsen/elm-dots-and-boxes" ]
+                        [ i [ class "fa fa-github" ] [] ]
+                    , a
+                        [ class "icon", href "https://twitter.com/R0MMSEN" ]
+                        [ i [ class "fa fa-twitter" ] [] ]
                     ]
                 ]
             ]

@@ -10,6 +10,7 @@ view model =
     div []
         [ Html.map AppMsg (App.View.viewHeader model.app)
         , viewBody model
+        , Html.map AppMsg (App.View.viewFooter model.app)
         ]
 
 
