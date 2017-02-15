@@ -2,6 +2,9 @@ port module State exposing (init, update, subscriptions)
 
 import Rest exposing (..)
 import Types exposing (..)
+import Board.Types exposing (..)
+import Game.Types exposing (..)
+import Player.Types exposing (..)
 import Date
 import Dict exposing (Dict)
 import Form.Validation exposing (..)

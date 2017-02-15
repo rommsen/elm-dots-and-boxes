@@ -1,6 +1,9 @@
 module View exposing (view)
 
 import Types exposing (..)
+import Board.Types exposing (..)
+import Game.Types exposing (..)
+import Player.Types exposing (..)
 import Date
 import Date.Extra.Config.Config_en_us
 import Date.Extra.Format

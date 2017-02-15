@@ -1,6 +1,8 @@
 module Rest exposing (..)
 
-import Types exposing (..)
+import Board.Types exposing (..)
+import Game.Types exposing (..)
+import Player.Types exposing (..)
 import Exts.Json.Encode as EJE
 import Exts.Json.Decode as EJD
 import Json.Decode as JD
