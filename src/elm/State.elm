@@ -1,13 +1,13 @@
 port module State exposing (init, update, subscriptions)
 
-import Board.Types exposing (..)
+import Board.Types as Board exposing (BoardSize)
 import Date
 import Dict exposing (Dict)
+import Game.Rest exposing (gameDecoder, gameEncoder)
 import Game.Types exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Player.Types as Player exposing (Player)
-import Rest exposing (..)
 import Task
 import Time
 import Types exposing (..)
@@ -73,10 +73,10 @@ update msg model =
                 ( { model | playerForm = withErrors }, Cmd.none )
 
         InputWidth width ->
-            ( { model | boardSize = updateWidth width model.boardSize }, Cmd.none )
+            ( { model | boardSize = Board.updateWidth width model.boardSize }, Cmd.none )
 
         InputHeight height ->
-            ( { model | boardSize = updateHeight height model.boardSize }, Cmd.none )
+            ( { model | boardSize = Board.updateHeight height model.boardSize }, Cmd.none )
 
         CreateGame ->
             case model.localPlayer of
@@ -103,22 +103,18 @@ update msg model =
         StartGame ->
             case ( model.game, model.localPlayer ) of
                 ( Just game, Just localPlayer ) ->
-                    let
-                        _ =
-                            Debug.log "union" (Dict.union game.joinRequests game.spectators)
-                    in
-                        if game.owner == localPlayer then
-                            ( model
-                            , { game
-                                | status = Running
-                                , spectators = Dict.union game.joinRequests game.spectators
-                                , joinRequests = Dict.empty
-                              }
-                                |> gameEncoder
-                                |> changeGame
-                            )
-                        else
-                            ( model, Cmd.none )
+                    if game.owner == localPlayer then
+                        ( model
+                        , { game
+                            | status = Running
+                            , spectators = Dict.union game.joinRequests game.spectators
+                            , joinRequests = Dict.empty
+                          }
+                            |> gameEncoder
+                            |> changeGame
+                        )
+                    else
+                        ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
