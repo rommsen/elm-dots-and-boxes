@@ -1,11 +1,12 @@
 module Types exposing (..)
 
+import Board.Types exposing (..)
 import Date
 import Dict exposing (Dict)
-import Json.Decode as JD
-import Board.Types exposing (..)
 import Game.Types exposing (..)
+import Json.Decode as JD
 import Player.Types exposing (..)
+import Time
 
 
 type alias Model =
@@ -15,6 +16,7 @@ type alias Model =
     , playerForm : PlayerForm
     , openGames : Dict GameId Game
     , runningGames : Dict GameId Game
+    , turnTimer : TurnTimer
     }
 
 
@@ -62,6 +64,10 @@ type alias Model =
 -}
 
 
+type alias TurnTimer =
+    Int
+
+
 type Msg
     = RegisterLocalPlayer
     | InputPlayerName String
@@ -82,3 +88,4 @@ type Msg
     | RunningGameAdded JD.Value
     | RunningGameRemoved GameId
     | BackToLobby
+    | TurnTimerTick Time.Time

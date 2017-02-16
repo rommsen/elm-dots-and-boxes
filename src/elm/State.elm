@@ -1,15 +1,16 @@
 port module State exposing (init, update, subscriptions)
 
-import Rest exposing (..)
-import Types exposing (..)
 import Board.Types exposing (..)
-import Game.Types exposing (..)
-import Player.Types as Player exposing (Player)
 import Date
 import Dict exposing (Dict)
+import Game.Types exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
+import Player.Types as Player exposing (Player)
+import Rest exposing (..)
 import Task
+import Time
+import Types exposing (..)
 
 
 initialModel : Model
@@ -20,12 +21,18 @@ initialModel =
     , playerForm = Player.defaultForm
     , openGames = Dict.empty
     , runningGames = Dict.empty
+    , turnTimer = turnTimer
     }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel, Cmd.none )
+
+
+turnTimer : Int
+turnTimer =
+    10
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -141,7 +148,12 @@ update msg model =
 
                         Just ownGame ->
                             if ownGame.id == game.id then
-                                ( { model | game = Just game }, Cmd.none )
+                                ( { model
+                                    | game = Just game
+                                    , turnTimer = turnTimer
+                                  }
+                                , Cmd.none
+                                )
                             else
                                 ( model, Cmd.none )
 
@@ -242,6 +254,26 @@ update msg model =
         BackToLobby ->
             ( { model | game = Nothing }, Cmd.none )
 
+        TurnTimerTick time ->
+            case ( model.game, model.localPlayer ) of
+                ( Just game, Just localPlayer ) ->
+                    let
+                        newTimer =
+                            model.turnTimer - 1
+
+                        cmd =
+                            if newTimer == 0 && game.owner == localPlayer then
+                                { game | players = Player.advance game.players }
+                                    |> gameEncoder
+                                    |> changeGame
+                            else
+                                Cmd.none
+                    in
+                        ( { model | turnTimer = newTimer }, cmd )
+
+                _ ->
+                    ( model, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -249,18 +281,31 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ gameOpened GameOpened
-        , gameChanged GameChanged
-        , localPlayerRegistered LocalPlayerRegistered
-        , openGameAdded OpenGameAdded
-        , openGameRemoved OpenGameRemoved
-        , localPlayerRegistered LocalPlayerRegistered
-        , openGameAdded OpenGameAdded
-        , openGameRemoved OpenGameRemoved
-        , runningGameAdded RunningGameAdded
-        , runningGameRemoved RunningGameRemoved
-        ]
+    let
+        timerSub =
+            case model.game of
+                Just game ->
+                    if game.status == Running then
+                        Time.every Time.second TurnTimerTick
+                    else
+                        Sub.none
+
+                Nothing ->
+                    Sub.none
+    in
+        Sub.batch
+            [ timerSub
+            , gameOpened GameOpened
+            , gameChanged GameChanged
+            , localPlayerRegistered LocalPlayerRegistered
+            , openGameAdded OpenGameAdded
+            , openGameRemoved OpenGameRemoved
+            , localPlayerRegistered LocalPlayerRegistered
+            , openGameAdded OpenGameAdded
+            , openGameRemoved OpenGameRemoved
+            , runningGameAdded RunningGameAdded
+            , runningGameRemoved RunningGameRemoved
+            ]
 
 
 port requestToJoinGame : JoinGameRequest -> Cmd msg

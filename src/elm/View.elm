@@ -18,7 +18,7 @@ import Dict exposing (Dict)
 import Form.Validation exposing (..)
 import Form.Elements exposing (wrapFormElement)
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes exposing (href, class, classList, placeholder, type_, value, colspan)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import List.Extra
 
@@ -99,7 +99,7 @@ viewBody : Model -> Html Msg
 viewBody model =
     case ( model.game, model.localPlayer ) of
         ( Just game, Just localPlayer ) ->
-            viewGame game localPlayer
+            viewGame game localPlayer model.turnTimer
 
         _ ->
             viewLobby model
@@ -317,13 +317,13 @@ viewGameDescription game =
         boardSize ++ " " ++ owner
 
 
-viewGame : Game -> Player -> Html Msg
-viewGame game localPlayer =
+viewGame : Game -> Player -> TurnTimer -> Html Msg
+viewGame game localPlayer turnTimer =
     section
         [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
-                [ viewGameInfoBox game localPlayer ]
+                [ viewGameInfoBox game localPlayer turnTimer ]
             , div [ class "columns" ]
                 [ viewGameBoard game
                 , viewGameStats game localPlayer
@@ -332,8 +332,8 @@ viewGame game localPlayer =
         ]
 
 
-viewGameInfoBox : Game -> Player -> Html Msg
-viewGameInfoBox game localPlayer =
+viewGameInfoBox : Game -> Player -> TurnTimer -> Html Msg
+viewGameInfoBox game localPlayer turnTimer =
     let
         player =
             game.players
@@ -351,6 +351,16 @@ viewGameInfoBox game localPlayer =
                     [ class "button is-primary", onClick StartGame ]
                     [ text "Start Game" ]
                     |> viewInfoBoxItem "Action"
+            else
+                text ""
+
+        timer =
+            if game.status == Running then
+                turnTimer
+                    |> max 0
+                    |> toString
+                    |> text
+                    |> viewInfoBoxItem "Timer"
             else
                 text ""
 
@@ -407,6 +417,7 @@ viewGameInfoBox game localPlayer =
                     [ class "level" ]
                     [ startButton
                     , backButton
+                    , timer
                     , status
                     , turn
                     , result
