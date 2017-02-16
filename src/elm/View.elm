@@ -354,16 +354,6 @@ viewGameInfoBox game localPlayer turnTimer =
             else
                 text ""
 
-        timer =
-            if game.status == Running then
-                turnTimer
-                    |> max 0
-                    |> toString
-                    |> text
-                    |> viewInfoBoxItem "Timer"
-            else
-                text ""
-
         backButton =
             if (not <| Player.isPlayerInGame localPlayer game.players) || game.status == Finished then
                 button
@@ -383,7 +373,13 @@ viewGameInfoBox game localPlayer turnTimer =
 
         turn =
             if game.status == Running then
-                text player.name |> viewInfoBoxItem "Turn"
+                turnTimer
+                    |> max 0
+                    |> toString
+                    |> (++) (player.name ++ " (")
+                    |> flip (++) ")"
+                    |> text
+                    |> viewInfoBoxItem "Turn"
             else
                 text ""
 
@@ -417,9 +413,8 @@ viewGameInfoBox game localPlayer turnTimer =
                     [ class "level" ]
                     [ startButton
                     , backButton
-                    , timer
-                    , status
                     , turn
+                    , status
                     , result
                     , players
                     , joinRequests
