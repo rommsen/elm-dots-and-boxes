@@ -1,7 +1,38 @@
-module Player.Types exposing (..)
+module Player.Types
+    exposing
+        ( PlayerId
+        , PlayerStatus(..)
+        , Player
+        , PlayerInGame
+        , PlayersInGame
+        , PlayerForm
+        , PlayerPoints
+        , Players
+        , advance
+        , updateCurrent
+        , playerInGameFactory
+        , playersInGameFactory
+        , getWinner
+        , addPlayerInGame
+        , status
+        , player
+        , points
+        , incrementPoints
+        , isPlayerInGame
+        , playerIsCurrent
+        , numberPlayers
+        , previous
+        , current
+        , next
+        , toList
+        , validateForm
+        , extractFromForm
+        , defaultForm
+        )
 
 import Dict exposing (Dict)
 import Form.Validation exposing (..)
+import List.Nonempty
 
 
 type alias PlayerId =
@@ -20,8 +51,8 @@ type alias PlayerForm =
     }
 
 
-defaultPlayerForm : PlayerForm
-defaultPlayerForm =
+defaultForm : PlayerForm
+defaultForm =
     PlayerForm "" []
 
 
@@ -57,9 +88,14 @@ type alias PlayerPoints =
     Int
 
 
-createPlayerInGame : Player -> PlayerStatus -> PlayerPoints -> PlayerInGame
-createPlayerInGame player status points =
+playerInGameFactory : Player -> PlayerStatus -> PlayerPoints -> PlayerInGame
+playerInGameFactory player status points =
     PlayerInGame { player = player, status = status, points = points }
+
+
+incrementPoints : PlayerInGame -> PlayerInGame
+incrementPoints (PlayerInGame { player, status, points }) =
+    playerInGameFactory player status (points + 1)
 
 
 playersInGameToList : PlayersInGame -> List PlayerInGame
@@ -69,23 +105,48 @@ playersInGameToList (PlayersInGame { previous, current, next }) =
         |> (++) next
 
 
-createPlayersInGame : List PlayerInGame -> PlayerInGame -> List PlayerInGame -> PlayersInGame
-createPlayersInGame previous current next =
+playersInGameFactory : List PlayerInGame -> PlayerInGame -> List PlayerInGame -> PlayersInGame
+playersInGameFactory previous current next =
     PlayersInGame { previous = previous, current = current, next = next }
 
 
-getCurrentPlayer : PlayersInGame -> PlayerInGame
-getCurrentPlayer (PlayersInGame { current }) =
+status : PlayerInGame -> PlayerStatus
+status (PlayerInGame { status }) =
+    status
+
+
+player : PlayerInGame -> Player
+player (PlayerInGame { player }) =
+    player
+
+
+points : PlayerInGame -> PlayerPoints
+points (PlayerInGame { points }) =
+    points
+
+
+previous : PlayersInGame -> List PlayerInGame
+previous (PlayersInGame { previous }) =
+    previous
+
+
+current : PlayersInGame -> PlayerInGame
+current (PlayersInGame { current }) =
     current
 
 
-updateCurrentPlayer : PlayersInGame -> PlayerInGame -> PlayersInGame
-updateCurrentPlayer (PlayersInGame { previous, next }) newCurrent =
-    createPlayersInGame previous newCurrent next
+next : PlayersInGame -> List PlayerInGame
+next (PlayersInGame { next }) =
+    next
 
 
-addPlayer : PlayersInGame -> PlayerInGame -> PlayersInGame
-addPlayer (PlayersInGame { previous, current, next }) player =
+updateCurrent : PlayersInGame -> PlayerInGame -> PlayersInGame
+updateCurrent (PlayersInGame { previous, next }) newCurrent =
+    playersInGameFactory previous newCurrent next
+
+
+addPlayerInGame : PlayersInGame -> PlayerInGame -> PlayersInGame
+addPlayerInGame (PlayersInGame { previous, current, next }) player =
     let
         newNext =
             next
@@ -93,14 +154,19 @@ addPlayer (PlayersInGame { previous, current, next }) player =
                 |> (::) player
                 |> List.reverse
     in
-        createPlayersInGame previous current newNext
+        playersInGameFactory previous current newNext
 
 
-playerIsPlayerInGame : Player -> PlayersInGame -> Bool
-playerIsPlayerInGame player players =
+isPlayerInGame : Player -> PlayersInGame -> Bool
+isPlayerInGame player players =
     playersInGameToList players
         |> List.map (\(PlayerInGame playerInGame) -> playerInGame.player)
         |> List.member player
+
+
+playerIsCurrent : Player -> PlayersInGame -> Bool
+playerIsCurrent localPlayer players =
+    localPlayer == (player <| current players)
 
 
 numberPlayers : PlayersInGame -> Int
@@ -109,8 +175,8 @@ numberPlayers players =
         |> List.length
 
 
-playerListSortedByPlayerPoints : PlayersInGame -> List PlayerInGame
-playerListSortedByPlayerPoints players =
+toList : PlayersInGame -> List PlayerInGame
+toList players =
     playersInGameToList players
         |> List.sortWith comparePlayerPoints
         |> List.reverse
@@ -144,3 +210,50 @@ getWinner players =
 comparePlayerPoints : PlayerInGame -> PlayerInGame -> Order
 comparePlayerPoints (PlayerInGame playerA) (PlayerInGame playerB) =
     compare playerA.points playerB.points
+
+
+advance : PlayersInGame -> PlayersInGame
+advance (PlayersInGame { previous, current, next }) =
+    let
+        {- | Nonempty.List allows me to work without Maybe handling when next is empty
+
+           when it is empty the list being previously "previous" must be the new next
+           If I have a single player game, the current player just stays current with
+           this implementation
+        -}
+        previousWithCurrent =
+            previous
+                |> List.reverse
+                |> (::) current
+                |> List.reverse
+                |> List.Nonempty.fromList
+                |> Maybe.withDefault (List.Nonempty.fromElement current)
+    in
+        case next of
+            head :: tail ->
+                PlayersInGame
+                    { previous = List.Nonempty.toList previousWithCurrent
+                    , current = head
+                    , next = tail
+                    }
+
+            {- | no more next questions available -}
+            [] ->
+                PlayersInGame
+                    { previous = []
+                    , current = List.Nonempty.head previousWithCurrent
+                    , next = List.Nonempty.tail previousWithCurrent
+                    }
+
+
+validateForm : PlayerForm -> List Error
+validateForm form =
+    begin form
+        |> validate (validateNotBlank "name" << .name)
+        |> extractErrors
+
+
+extractFromForm : PlayerForm -> Maybe Player
+extractFromForm form =
+    Result.map (Player "") (stringNotBlankResult form.name)
+        |> Result.toMaybe

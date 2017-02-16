@@ -3,7 +3,14 @@ module View exposing (view)
 import Types exposing (..)
 import Board.Types exposing (..)
 import Game.Types exposing (..)
-import Player.Types exposing (..)
+import Player.Types as Player
+    exposing
+        ( PlayerInGame
+        , PlayersInGame
+        , Player
+        , PlayerStatus
+        , PlayerForm
+        )
 import Date
 import Date.Extra.Config.Config_en_us
 import Date.Extra.Format
@@ -328,8 +335,10 @@ viewGame game localPlayer =
 viewGameInfoBox : Game -> Player -> Html Msg
 viewGameInfoBox game localPlayer =
     let
-        (PlayerInGame { player }) =
-            getCurrentPlayer game.players
+        player =
+            game.players
+                |> Player.current
+                |> Player.player
 
         status =
             toString game.status
@@ -346,7 +355,7 @@ viewGameInfoBox game localPlayer =
                 text ""
 
         backButton =
-            if (not <| playerIsPlayerInGame localPlayer game.players) || game.status == Finished then
+            if (not <| Player.isPlayerInGame localPlayer game.players) || game.status == Finished then
                 button
                     [ class "button is-primary", onClick BackToLobby ]
                     [ text "Back to Lobby" ]
@@ -387,7 +396,7 @@ viewGameInfoBox game localPlayer =
 
         players =
             game.players
-                |> numberPlayers
+                |> Player.numberPlayers
                 |> toString
                 |> text
                 |> viewInfoBoxItem "# Players"
@@ -411,27 +420,31 @@ viewGameInfoBox game localPlayer =
 
 viewGameResult : GameResult -> String
 viewGameResult result =
+    case result of
+        None ->
+            "None"
+
+        Winner player ->
+            "Winner: " ++ viewPlayerResult player
+
+        Draw players ->
+            players
+                |> List.map viewPlayerResult
+                |> List.intersperse ", "
+                |> List.foldr (++) ""
+                |> (++) "Draw: "
+
+
+viewPlayerResult : PlayerInGame -> String
+viewPlayerResult playerInGame =
     let
-        playerResult (PlayerInGame { player, points }) =
-            player.name ++ " (" ++ toString points ++ " points)"
+        player =
+            Player.player playerInGame
+
+        points =
+            Player.points playerInGame
     in
-        case result of
-            None ->
-                "None"
-
-            Winner player ->
-                "Winner: " ++ playerResult player
-
-            Draw players ->
-                players
-                    |> List.map playerResult
-                    |> List.intersperse ", "
-                    |> List.foldr (++) ""
-                    |> (++) "Draw: "
-
-
-
--- |> (++) "Draw: "
+        player.name ++ " (" ++ toString points ++ " points)"
 
 
 viewInfoBoxItem : String -> Html Msg -> Html Msg
@@ -460,7 +473,7 @@ viewPlayerTable : PlayersInGame -> Html Msg
 viewPlayerTable playersInGame =
     let
         playerList =
-            playerListSortedByPlayerPoints playersInGame
+            Player.toList playersInGame
                 |> List.indexedMap viewPlayer
     in
         table
@@ -479,12 +492,21 @@ viewPlayerTable playersInGame =
 
 
 viewPlayer : Int -> PlayerInGame -> Html Msg
-viewPlayer pos (PlayerInGame { player, points }) =
-    tr []
-        [ td [] [ text <| toString (pos + 1) ]
-        , td [] [ text player.name ]
-        , td [] [ text <| toString points ]
-        ]
+viewPlayer pos playerInGame =
+    let
+        player =
+            playerInGame
+                |> Player.player
+
+        points =
+            playerInGame
+                |> Player.points
+    in
+        tr []
+            [ td [] [ text <| toString (pos + 1) ]
+            , td [] [ text player.name ]
+            , td [] [ text <| toString points ]
+            ]
 
 
 viewJoinRequestTable : Game -> Player -> Html Msg
@@ -557,8 +579,7 @@ viewTableBody game =
         grid =
             List.Extra.groupsOf game.boardSize.width game.boxes
     in
-        tbody
-            []
+        tbody []
             (List.indexedMap (viewTableRows game) grid)
 
 

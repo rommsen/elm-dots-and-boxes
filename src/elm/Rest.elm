@@ -1,12 +1,29 @@
 module Rest exposing (..)
 
 import Board.Types exposing (..)
+import Date.Extra.Format
+import Dict
+import Exts.Json.Decode as EJD
+import Exts.Json.Encode as EJE
 import Game.Types exposing (..)
-import Player.Types exposing (..)
+import Json.Decode as JD
+import Json.Decode.Pipeline as JDP
+import Json.Encode as JE
+import Player.Types as Player
+    exposing
+        ( PlayerId
+        , Players
+        , PlayerPoints
+        , PlayerInGame
+        , PlayersInGame
+        , Player
+        , PlayerStatus(..)
+        , PlayerForm
+        )
 import Exts.Json.Encode as EJE
 import Exts.Json.Decode as EJD
 import Json.Decode as JD
-import Json.Decode.Pipeline
+import Json.Decode.Pipeline as JDP
 import Json.Encode as JE
 import Dict
 import Date.Extra.Format
@@ -14,19 +31,19 @@ import Date.Extra.Format
 
 gameDecoder : JD.Decoder Game
 gameDecoder =
-    Json.Decode.Pipeline.decode Game
-        |> Json.Decode.Pipeline.required "id" JD.string
-        |> Json.Decode.Pipeline.required "owner" playerDecoder
-        |> Json.Decode.Pipeline.required "createdAt" EJD.decodeDate
-        |> Json.Decode.Pipeline.required "boardSize" boardSizeDecoder
-        |> Json.Decode.Pipeline.required "boxes" boxesDecoder
-        |> Json.Decode.Pipeline.optional "selectedLines" selectedLinesDecoder Dict.empty
-        |> Json.Decode.Pipeline.required "status" gameStatusDecoder
-        |> Json.Decode.Pipeline.required "result" gameResultDecoder
-        |> Json.Decode.Pipeline.required "players" playersInGameDecoder
-        |> Json.Decode.Pipeline.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
-        |> Json.Decode.Pipeline.optional "joinRequests" joinRequestsDecoder Dict.empty
-        |> Json.Decode.Pipeline.optional "spectators" joinRequestsDecoder Dict.empty
+    JDP.decode Game
+        |> JDP.required "id" JD.string
+        |> JDP.required "owner" playerDecoder
+        |> JDP.required "createdAt" EJD.decodeDate
+        |> JDP.required "boardSize" boardSizeDecoder
+        |> JDP.required "boxes" boxesDecoder
+        |> JDP.optional "selectedLines" selectedLinesDecoder Dict.empty
+        |> JDP.required "status" gameStatusDecoder
+        |> JDP.required "result" gameResultDecoder
+        |> JDP.required "players" playersInGameDecoder
+        |> JDP.optional "availablePlayerStatus" (JD.list playerStatusDecoder) []
+        |> JDP.optional "joinRequests" joinRequestsDecoder Dict.empty
+        |> JDP.optional "spectators" joinRequestsDecoder Dict.empty
 
 
 boxesDecoder : JD.Decoder Boxes
@@ -36,19 +53,19 @@ boxesDecoder =
 
 boardSizeDecoder : JD.Decoder BoardSize
 boardSizeDecoder =
-    Json.Decode.Pipeline.decode BoardSize
-        |> Json.Decode.Pipeline.required "width" JD.int
-        |> Json.Decode.Pipeline.required "height" JD.int
+    JDP.decode BoardSize
+        |> JDP.required "width" JD.int
+        |> JDP.required "height" JD.int
 
 
 boxDecoder : JD.Decoder Box
 boxDecoder =
-    Json.Decode.Pipeline.decode Box
-        |> Json.Decode.Pipeline.required "up" lineDecoder
-        |> Json.Decode.Pipeline.required "down" lineDecoder
-        |> Json.Decode.Pipeline.required "left" lineDecoder
-        |> Json.Decode.Pipeline.required "right" lineDecoder
-        |> Json.Decode.Pipeline.optional "doneBy" (JD.nullable playerStatusDecoder) Nothing
+    JDP.decode Box
+        |> JDP.required "up" lineDecoder
+        |> JDP.required "down" lineDecoder
+        |> JDP.required "left" lineDecoder
+        |> JDP.required "right" lineDecoder
+        |> JDP.optional "doneBy" (JD.nullable playerStatusDecoder) Nothing
 
 
 selectedLinesDecoder : JD.Decoder SelectedLines
@@ -91,25 +108,25 @@ joinRequestDecoder =
 
 playerInGameDecoder : JD.Decoder PlayerInGame
 playerInGameDecoder =
-    Json.Decode.Pipeline.decode createPlayerInGame
-        |> Json.Decode.Pipeline.required "player" playerDecoder
-        |> Json.Decode.Pipeline.required "status" playerStatusDecoder
-        |> Json.Decode.Pipeline.required "points" JD.int
+    JDP.decode Player.playerInGameFactory
+        |> JDP.required "player" playerDecoder
+        |> JDP.required "status" playerStatusDecoder
+        |> JDP.required "points" JD.int
 
 
 playersInGameDecoder : JD.Decoder PlayersInGame
 playersInGameDecoder =
-    Json.Decode.Pipeline.decode createPlayersInGame
-        |> Json.Decode.Pipeline.optional "previous" (JD.list playerInGameDecoder) []
-        |> Json.Decode.Pipeline.required "current" playerInGameDecoder
-        |> Json.Decode.Pipeline.optional "next" (JD.list playerInGameDecoder) []
+    JDP.decode Player.playersInGameFactory
+        |> JDP.optional "previous" (JD.list playerInGameDecoder) []
+        |> JDP.required "current" playerInGameDecoder
+        |> JDP.optional "next" (JD.list playerInGameDecoder) []
 
 
 playerDecoder : JD.Decoder Player
 playerDecoder =
-    Json.Decode.Pipeline.decode Player
-        |> Json.Decode.Pipeline.required "id" JD.string
-        |> Json.Decode.Pipeline.required "name" JD.string
+    JDP.decode Player
+        |> JDP.required "id" JD.string
+        |> JDP.required "name" JD.string
 
 
 playerStatusDecoder : JD.Decoder PlayerStatus
@@ -268,20 +285,20 @@ encodePoint point =
 
 
 playersInGameEncoder : PlayersInGame -> JE.Value
-playersInGameEncoder (PlayersInGame { previous, current, next }) =
+playersInGameEncoder players =
     JE.object
-        [ ( "previous", JE.list <| List.map playerInGameEncoder previous )
-        , ( "current", playerInGameEncoder current )
-        , ( "next", JE.list <| List.map playerInGameEncoder next )
+        [ ( "previous", JE.list <| List.map playerInGameEncoder (Player.previous players) )
+        , ( "current", playerInGameEncoder (Player.current players) )
+        , ( "next", JE.list <| List.map playerInGameEncoder (Player.next players) )
         ]
 
 
 playerInGameEncoder : PlayerInGame -> JE.Value
-playerInGameEncoder (PlayerInGame { player, status, points }) =
+playerInGameEncoder player =
     JE.object
-        [ ( "player", encodePlayer player )
-        , ( "status", playerStatusEncoder status )
-        , ( "points", JE.int points )
+        [ ( "player", encodePlayer (Player.player player) )
+        , ( "status", playerStatusEncoder (Player.status player) )
+        , ( "points", JE.int (Player.points player) )
         ]
 
 
