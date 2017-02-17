@@ -267,7 +267,7 @@ viewGameTable games header =
             ]
         , games
             |> Dict.values
-            |> List.sortBy (\game -> toString game.createdAt)
+            |> List.sortWith (\a b -> compare (Date.toTime a.createdAt) (Date.toTime b.createdAt))
             |> List.reverse
             |> List.map viewGameRow
             |> tbody []

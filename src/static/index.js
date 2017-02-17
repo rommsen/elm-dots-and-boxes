@@ -11,8 +11,6 @@ import {
 const Elm = require('../elm/Main');
 const app = Elm.Main.embed(document.getElementById('main'));
 
-let gameId;
-
 app.ports.openGame.subscribe(game => {
     games.open(game)
         .then(function(val) {
