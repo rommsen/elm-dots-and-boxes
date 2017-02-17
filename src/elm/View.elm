@@ -1,26 +1,19 @@
 module View exposing (view)
 
-import Types exposing (..)
 import Board.Types exposing (..)
-import Game.Types exposing (..)
-import Player.Types as Player
-    exposing
-        ( PlayerInGame
-        , PlayersInGame
-        , Player
-        , PlayerStatus
-        , PlayerForm
-        )
 import Date
 import Date.Extra.Config.Config_en_us
 import Date.Extra.Format
 import Dict exposing (Dict)
-import Form.Validation exposing (..)
 import Form.Elements exposing (wrapFormElement)
+import Form.Validation exposing (..)
+import Game.Types exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (href, class, classList, placeholder, type_, value, colspan)
+import Html.Attributes exposing (class, classList, colspan, href, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import List.Extra
+import Player.Types as Player exposing (Player, PlayerForm, PlayerInGame, PlayerStatus, PlayersInGame)
+import Types exposing (..)
 
 
 view : Model -> Html Msg
@@ -373,12 +366,8 @@ viewGameInfoBox game localPlayer turnTimer =
 
         turn =
             if game.status == Running then
-                turnTimer
-                    |> max 0
-                    |> toString
-                    |> (++) (player.name ++ " (")
-                    |> flip (++) ")"
-                    |> text
+                max 0 turnTimer
+                    |> viewTurnInfo player
                     |> viewInfoBoxItem "Turn"
             else
                 text ""
@@ -422,6 +411,23 @@ viewGameInfoBox game localPlayer turnTimer =
                     ]
                 ]
             ]
+
+
+viewTurnInfo : Player -> Int -> Html Msg
+viewTurnInfo player turnTimer =
+    div []
+        [ text player.name
+        , text " "
+        , span
+            [ class "tag is-medium"
+            , classList
+                [ ( "is-is-success", turnTimer > 5 )
+                , ( "is-warning", turnTimer <= 5 && turnTimer > 2 )
+                , ( "is-danger", turnTimer <= 2 )
+                ]
+            ]
+            [ text <| toString turnTimer ]
+        ]
 
 
 viewGameResult : GameResult -> String
