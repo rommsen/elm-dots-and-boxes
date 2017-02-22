@@ -22,20 +22,32 @@ export const games = {
 
     update: game => {
         return database
-            .ref(GAMES_REFPATH + "/" + game.id)
+            .ref(`${GAMES_REFPATH}/${game.id}`)
             .set(game);
     },
 
     requestToJoinGame: request => {
         return database
-            .ref(GAMES_REFPATH + "/" + request.gameId + "/joinRequests")
+            .ref(`${GAMES_REFPATH}/${request.gameId}/joinRequests`)
             .push(request.player);
     },
 
     watchGame: request => {
         return database
-            .ref(GAMES_REFPATH + "/" + request.gameId + "/spectators")
+            .ref(`${GAMES_REFPATH}/${request.gameId}/spectators`)
             .push(request.player);
+    },
+
+    abandonOnDisconnect: gameId => {
+        const ref = database
+            .ref(`${GAMES_REFPATH}/${gameId}/status`);
+        return ref.onDisconnect().set("Abandoned");
+    },
+
+    cancelAbandonOnDisconnect: gameId => {
+        const ref = database
+            .ref(`${GAMES_REFPATH}/${gameId}/status`);
+        return ref.onDisconnect().cancel();
     },
 
     ref: database.ref(GAMES_REFPATH)
@@ -46,6 +58,12 @@ export const players = {
         return database
             .ref(PLAYER_REFPATH)
             .push(player);
+    },
+
+    deleteOnDisconnect: playerId => {
+        const ref = database
+            .ref(`${PLAYER_REFPATH}/${playerId}`);
+        return ref.onDisconnect().remove();
     },
 
     ref: database.ref(PLAYER_REFPATH)

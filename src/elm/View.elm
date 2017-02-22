@@ -119,7 +119,7 @@ viewLobbyBody model =
 
                 Just player ->
                     [ viewLobbyInfoBox model
-                    , viewGameForm model.boardSize
+                    , viewGameForm model.gameForm
                     , viewGameTable model.openGames "Open games"
                     , viewGameTable model.runningGames "Running games"
                     ]
@@ -205,12 +205,13 @@ viewLobbyInfoBox model =
             ]
 
 
-viewGameForm : BoardSize -> Html Msg
-viewGameForm { width, height } =
+viewGameForm : GameForm -> Html Msg
+viewGameForm gameForm =
     Html.form [ onSubmit CreateGame ]
         [ h1 [ class "title" ] [ text "Choose game size" ]
-        , viewSizeButtons width InputWidth
-        , viewSizeButtons height InputHeight
+        , viewSizeButtons gameForm.boardSize.width InputWidth "Width"
+        , viewSizeButtons gameForm.boardSize.height InputHeight "Height"
+        , viewTurnTimerButtons gameForm.turnTimer
         , button
             [ type_ "submit"
             , class "button is-primary"
@@ -219,8 +220,8 @@ viewGameForm { width, height } =
         ]
 
 
-viewSizeButtons : Int -> (Int -> Msg) -> Html Msg
-viewSizeButtons modelSize msg =
+viewSizeButtons : Int -> (Int -> Msg) -> String -> Html Msg
+viewSizeButtons modelSize msg inputLabel =
     let
         buttons =
             List.range 2 8
@@ -228,7 +229,7 @@ viewSizeButtons modelSize msg =
     in
         div
             [ class "control" ]
-            [ label [ class "label" ] [ text "Height" ]
+            [ label [ class "label" ] [ text inputLabel ]
             , p
                 [ class "control has-addons" ]
                 buttons
@@ -245,6 +246,33 @@ viewSizeButton modelSize msg size =
         [ text <| toString size ]
 
 
+viewTurnTimerButtons : TurnTimer -> Html Msg
+viewTurnTimerButtons turnTimerPreset =
+    let
+        buttons =
+            [ 3, 5, 10, 15, 20 ]
+                |> List.map
+                    (viewTurnTimerButton turnTimerPreset)
+    in
+        div
+            [ class "control" ]
+            [ label [ class "label" ] [ text "Turn Timer (in seconds)" ]
+            , p
+                [ class "control has-addons" ]
+                buttons
+            ]
+
+
+viewTurnTimerButton : TurnTimer -> TurnTimer -> Html Msg
+viewTurnTimerButton modelTurnTimer turnTimer =
+    a
+        [ class "button is-info"
+        , classList [ ( "is-outlined", turnTimer /= modelTurnTimer ) ]
+        , onClick <| InputTurnTimer turnTimer
+        ]
+        [ text <| toString turnTimer ]
+
+
 viewGameTable : Dict GameId Game -> String -> Html Msg
 viewGameTable games header =
     table
@@ -254,6 +282,7 @@ viewGameTable games header =
             , tr []
                 [ th [] [ text "owner" ]
                 , th [] [ text "size" ]
+                , th [] [ text "timer" ]
                 , th [] [ text "created at" ]
                 , th [] [ text "action" ]
                 ]
@@ -283,6 +312,7 @@ viewGameRow game =
         tr []
             [ td [] [ text game.owner.name ]
             , td [] [ text <| toString game.boardSize.width ++ " x " ++ toString game.boardSize.height ]
+            , td [] [ text <| toString game.turnTimer ]
             , td [] [ text <| formatDateTime game.createdAt ]
             , td []
                 [ joinButton
@@ -318,7 +348,7 @@ viewGame game localPlayer turnTimer =
             [ div [ class "columns" ]
                 [ viewGameInfoBox game localPlayer turnTimer ]
             , div [ class "columns" ]
-                [ viewGameBoard game
+                [ viewGameBoard game localPlayer
                 , viewGameStats game localPlayer
                 ]
             ]
@@ -348,7 +378,11 @@ viewGameInfoBox game localPlayer turnTimer =
                 text ""
 
         backButton =
-            if (not <| Player.isPlayerInGame localPlayer game.players) || game.status == Finished then
+            if
+                (not <| Player.isPlayerInGame localPlayer game.players)
+                    || (game.status == Finished)
+                    || (game.status == Abandoned)
+            then
                 button
                     [ class "button is-primary", onClick BackToLobby ]
                     [ text "Back to Lobby" ]
@@ -507,12 +541,10 @@ viewPlayer : Int -> PlayerInGame -> Html Msg
 viewPlayer pos playerInGame =
     let
         player =
-            playerInGame
-                |> Player.player
+            Player.player playerInGame
 
         points =
-            playerInGame
-                |> Player.points
+            Player.points playerInGame
     in
         tr []
             [ td [] [ text <| toString (pos + 1) ]
@@ -561,8 +593,8 @@ viewJoinRequest availablePlayerStatus owner localPlayer joinGameRequestEntry =
             ]
 
 
-viewGameBoard : Game -> Html Msg
-viewGameBoard game =
+viewGameBoard : Game -> Player -> Html Msg
+viewGameBoard game player =
     let
         tableClasses =
             "field-table"
@@ -578,7 +610,9 @@ viewGameBoard game =
         div [ class "column is-10" ]
             [ div [ class "box" ]
                 [ table
-                    [ class tableClasses ]
+                    [ class tableClasses
+                    , classList [ ( "game_active", Player.playerIsCurrent player game.players ) ]
+                    ]
                     [ viewTableBody game
                     ]
                 ]

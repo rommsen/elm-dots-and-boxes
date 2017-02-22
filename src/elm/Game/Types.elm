@@ -17,6 +17,7 @@ type alias Game =
     , owner : Player
     , createdAt : Date.Date
     , boardSize : BoardSize
+    , turnTimer : TurnTimer
     , boxes : Boxes
     , selectedLines : SelectedLines
     , status : GameStatus
@@ -28,8 +29,18 @@ type alias Game =
     }
 
 
+type alias GameForm =
+    { boardSize : BoardSize
+    , turnTimer : TurnTimer
+    }
+
+
 type alias GameId =
     String
+
+
+type alias TurnTimer =
+    Int
 
 
 type alias SelectedLines =
@@ -40,6 +51,7 @@ type GameStatus
     = Open
     | Running
     | Finished
+    | Abandoned
 
 
 type GameResult
@@ -81,8 +93,8 @@ addNewPlayerToGame ( joinRequestId, player ) game =
             game
 
 
-buildGame : Player -> BoardSize -> Date.Date -> Game
-buildGame owner boardSize createdAt =
+buildGame : Player -> GameForm -> Date.Date -> Game
+buildGame owner gameForm createdAt =
     let
         playerInGame =
             Player.playerInGameFactory owner Player1 0
@@ -90,8 +102,9 @@ buildGame owner boardSize createdAt =
         { id = ""
         , owner = owner
         , createdAt = createdAt
-        , boardSize = boardSize
-        , boxes = buildBoxes boardSize
+        , boardSize = gameForm.boardSize
+        , turnTimer = gameForm.turnTimer
+        , boxes = buildBoxes gameForm.boardSize
         , selectedLines = Dict.empty
         , status = Open
         , result = None

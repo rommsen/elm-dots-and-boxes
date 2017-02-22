@@ -28,6 +28,7 @@ gameDecoder =
         |> JDP.required "owner" Player.playerDecoder
         |> JDP.required "createdAt" EJD.decodeDate
         |> JDP.required "boardSize" Board.boardSizeDecoder
+        |> JDP.required "turnTimer" JD.int
         |> JDP.required "boxes" Board.boxesDecoder
         |> JDP.optional "selectedLines" selectedLinesDecoder Dict.empty
         |> JDP.required "status" gameStatusDecoder
@@ -104,6 +105,9 @@ gameStatusStringDecoder string =
         "Finished" ->
             JD.succeed Finished
 
+        "Abandoned" ->
+            JD.succeed Abandoned
+
         _ ->
             JD.fail "game status not available"
 
@@ -115,6 +119,7 @@ gameEncoder game =
         , ( "owner", Player.playerEncoder game.owner )
         , ( "createdAt", JE.string <| Date.Extra.Format.isoString game.createdAt )
         , ( "boardSize", Board.boardSizeEncoder game.boardSize )
+        , ( "turnTimer", JE.int game.turnTimer )
         , ( "boxes", Board.boxesEncoder game.boxes )
         , ( "selectedLines", selectedLinesEncoder game.selectedLines )
         , ( "status", gameStatusEncoder game.status )

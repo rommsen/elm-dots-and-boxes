@@ -11,17 +11,13 @@ import Time
 
 type alias Model =
     { game : Maybe Game
-    , boardSize : BoardSize
+    , gameForm : GameForm
     , localPlayer : Maybe Player
     , playerForm : PlayerForm
     , openGames : Dict GameId Game
     , runningGames : Dict GameId Game
     , turnTimer : TurnTimer
     }
-
-
-type alias TurnTimer =
-    Int
 
 
 type Msg
@@ -44,4 +40,5 @@ type Msg
     | RunningGameAdded JD.Value
     | RunningGameRemoved GameId
     | BackToLobby
+    | InputTurnTimer TurnTimer
     | TurnTimerTick Time.Time

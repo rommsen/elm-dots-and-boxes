@@ -101,7 +101,7 @@
     position: absolute;
     background: #f8f8f8
 }
-.edge:hover {
+.game_active .edge:hover {
     background: black;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1

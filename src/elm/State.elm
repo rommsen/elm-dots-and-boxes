@@ -16,23 +16,21 @@ import Types exposing (..)
 initialModel : Model
 initialModel =
     { game = Nothing
-    , boardSize = BoardSize 3 3
+    , gameForm =
+        { boardSize = BoardSize 3 3
+        , turnTimer = 10
+        }
     , localPlayer = Nothing
     , playerForm = Player.defaultForm
     , openGames = Dict.empty
     , runningGames = Dict.empty
-    , turnTimer = turnTimer
+    , turnTimer = 10
     }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel, Cmd.none )
-
-
-turnTimer : Int
-turnTimer =
-    10
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -73,10 +71,34 @@ update msg model =
                 ( { model | playerForm = withErrors }, Cmd.none )
 
         InputWidth width ->
-            ( { model | boardSize = Board.updateWidth width model.boardSize }, Cmd.none )
+            let
+                form =
+                    model.gameForm
+
+                newForm =
+                    { form | boardSize = Board.updateWidth width form.boardSize }
+            in
+                ( { model | gameForm = newForm }, Cmd.none )
 
         InputHeight height ->
-            ( { model | boardSize = Board.updateHeight height model.boardSize }, Cmd.none )
+            let
+                form =
+                    model.gameForm
+
+                newForm =
+                    { form | boardSize = Board.updateHeight height form.boardSize }
+            in
+                ( { model | gameForm = newForm }, Cmd.none )
+
+        InputTurnTimer turnTimer ->
+            let
+                form =
+                    model.gameForm
+
+                newForm =
+                    { form | turnTimer = turnTimer }
+            in
+                ( { model | gameForm = newForm }, Cmd.none )
 
         CreateGame ->
             case model.localPlayer of
@@ -92,7 +114,7 @@ update msg model =
         OpenGame localPlayer openedAt ->
             let
                 game =
-                    buildGame localPlayer model.boardSize openedAt
+                    buildGame localPlayer model.gameForm openedAt
             in
                 ( { model | game = Just game }
                 , game
@@ -144,12 +166,20 @@ update msg model =
 
                         Just ownGame ->
                             if ownGame.id == game.id then
-                                ( { model
-                                    | game = Just game
-                                    , turnTimer = turnTimer
-                                  }
-                                , Cmd.none
-                                )
+                                let
+                                    cmd =
+                                        {- | tell JS that game has finished to stop abandoning -}
+                                        if game.status == Finished then
+                                            finishGame game.id
+                                        else
+                                            Cmd.none
+                                in
+                                    ( { model
+                                        | game = Just game
+                                        , turnTimer = game.turnTimer
+                                      }
+                                    , cmd
+                                    )
                             else
                                 ( model, Cmd.none )
 
@@ -258,7 +288,7 @@ update msg model =
                             model.turnTimer - 1
 
                         cmd =
-                            if newTimer == 0 && game.owner == localPlayer then
+                            if newTimer <= 0 && game.owner == localPlayer then
                                 { game | players = Player.advance game.players }
                                     |> gameEncoder
                                     |> changeGame
@@ -311,6 +341,9 @@ port watchGame : JoinGameRequest -> Cmd msg
 
 
 port openGame : JE.Value -> Cmd msg
+
+
+port finishGame : GameId -> Cmd msg
 
 
 port changeGame : JE.Value -> Cmd msg
