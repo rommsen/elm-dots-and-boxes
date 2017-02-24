@@ -288,7 +288,7 @@ update msg model =
                             model.turnTimer - 1
 
                         cmd =
-                            if newTimer <= 0 && game.owner == localPlayer then
+                            if newTimer < 0 && game.owner == localPlayer then
                                 { game | players = Player.advance game.players }
                                     |> gameEncoder
                                     |> changeGame
