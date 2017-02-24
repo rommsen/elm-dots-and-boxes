@@ -1,17 +1,31 @@
-# Elm project
+# Elm Dots and Boxes
 I build this project as a learning project to learn Elm.
 I am more than happy for any reviews or ideas where and how to improve.
 
-
 ## What is it doing?
-Using the giphy search api to show gifs
+It is an online multiplayer implementation of [https://en.wikipedia.org/wiki/Dots_and_Boxes](Dots and Boxes).
 
+## Why do I think it is cool
+* Multiplayer: up to five players!
+* Spectator-Mode: watch games of other players
+* many different board sizes
+* turn timer to keep the game going
+
+## Thats cool, can I play it online?
+Yes please: https://elm-dots-and-boxes.firebaseapp.com/
 
 ## What is it based on?
 * Elm (obviously)
 * some webpack/babel for transpilation of ES6 and the dev-server / hot-reloading
 * [Bulma](http://bulma.io/) for the CSS/Flexbox magic
 * https://github.com/moarwick/elm-webpack-starter
+* Firebase for the backend
+* because I am shit in CSS, I took the basic idea (table as board game, divs that are pushed onto the tables boarder as edges) and the basic CSS from http://en.dots-game.org/
+
+
+## Nice what else did you do in elm?
+* [elm-giphy](https://github.com/rommsen/elm-giphy)
+* [elm-bookkeping](https://github.com/rommsen/elm-bookkeeping)
 
 
 ## Getting started
