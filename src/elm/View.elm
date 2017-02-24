@@ -441,12 +441,12 @@ viewGameInfoBox game localPlayer turnTimer =
                     [ class "level" ]
                     [ startButton
                     , backButton
-                    , turn
                     , status
                     , result
                     , players
                     , joinRequests
                     , spectators
+                    , turn
                     ]
                 ]
             ]
