@@ -1,6 +1,7 @@
 port module State exposing (init, update, subscriptions)
 
 import Board.Types as Board exposing (BoardSize)
+import Chat.Types as Chat
 import Date
 import Dict exposing (Dict)
 import Game.Rest exposing (gameDecoder, gameEncoder)
@@ -25,6 +26,8 @@ initialModel =
     , openGames = Dict.empty
     , runningGames = Dict.empty
     , turnTimer = 10
+    , chatInput = ""
+    , chatMessages = []
     }
 
 
@@ -278,7 +281,7 @@ update msg model =
                     ( model, Cmd.none )
 
         BackToLobby ->
-            ( { model | game = Nothing }, Cmd.none )
+            ( { model | game = Nothing, chatMessages = [] }, Cmd.none )
 
         TurnTimerTick time ->
             case ( model.game, model.localPlayer ) of
@@ -298,6 +301,33 @@ update msg model =
                         ( { model | turnTimer = newTimer }, cmd )
 
                 _ ->
+                    ( model, Cmd.none )
+
+        InputChatMessage msg ->
+            ( { model | chatInput = msg }, Cmd.none )
+
+        SubmitChatMessage ->
+            case ( model.game, model.localPlayer ) of
+                ( Just game, Just localPlayer ) ->
+                    if not <| String.isEmpty model.chatInput then
+                        ( { model | chatInput = "" }
+                        , sendChatMsg <| Chat.Message model.chatInput localPlayer game.id
+                        )
+                    else
+                        ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        IncomingChatMessage message ->
+            case model.game of
+                Just game ->
+                    if game.id == message.gameId then
+                        ( { model | chatMessages = message :: model.chatMessages }, Cmd.none )
+                    else
+                        ( model, Cmd.none )
+
+                Nothing ->
                     ( model, Cmd.none )
 
 
@@ -331,6 +361,7 @@ subscriptions model =
             , openGameRemoved OpenGameRemoved
             , runningGameAdded RunningGameAdded
             , runningGameRemoved RunningGameRemoved
+            , incomingChatMsg IncomingChatMessage
             ]
 
 
@@ -371,3 +402,9 @@ port runningGameAdded : (JD.Value -> msg) -> Sub msg
 
 
 port runningGameRemoved : (GameId -> msg) -> Sub msg
+
+
+port sendChatMsg : Chat.Message -> Cmd msg
+
+
+port incomingChatMsg : (Chat.Message -> msg) -> Sub msg

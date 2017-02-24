@@ -1,6 +1,7 @@
 module View exposing (view)
 
 import Board.Types exposing (..)
+import Chat.Types as Chat
 import Date
 import Date.Extra.Config.Config_en_us
 import Date.Extra.Format
@@ -92,7 +93,7 @@ viewBody : Model -> Html Msg
 viewBody model =
     case ( model.game, model.localPlayer ) of
         ( Just game, Just localPlayer ) ->
-            viewGame game localPlayer model.turnTimer
+            viewGame game localPlayer model.turnTimer model.chatInput model.chatMessages
 
         _ ->
             viewLobby model
@@ -340,8 +341,8 @@ viewGameDescription game =
         boardSize ++ " " ++ owner
 
 
-viewGame : Game -> Player -> TurnTimer -> Html Msg
-viewGame game localPlayer turnTimer =
+viewGame : Game -> Player -> TurnTimer -> String -> List Chat.Message -> Html Msg
+viewGame game localPlayer turnTimer chatInput chatMessages =
     section
         [ class "section" ]
         [ div [ class "container" ]
@@ -350,6 +351,10 @@ viewGame game localPlayer turnTimer =
             , div [ class "columns" ]
                 [ viewGameBoard game localPlayer
                 , viewGameStats game localPlayer
+                ]
+            , div [ class "columns" ]
+                [ viewChatTable chatMessages
+                , viewChatForm chatInput
                 ]
             ]
         ]
@@ -511,6 +516,64 @@ viewGameStats game localPlayer =
         [ div [ class "box" ]
             [ viewPlayerTable game.players
             , viewJoinRequestTable game localPlayer
+            ]
+        ]
+
+
+viewChatTable : List Chat.Message -> Html Msg
+viewChatTable chatMessages =
+    div [ class "column is-8" ]
+        [ div [ class "box" ]
+            [ table
+                [ class "table is-striped is-narrow" ]
+                [ thead
+                    []
+                    [ tr
+                        []
+                        [ th [] [ text "Player" ]
+                        , th [] [ text "Msg" ]
+                        ]
+                    ]
+                , tbody [] (List.map viewChatMsg chatMessages)
+                ]
+            ]
+        ]
+
+
+viewChatMsg : Chat.Message -> Html Msg
+viewChatMsg { msg, player } =
+    tr []
+        [ td [] [ text player.name ]
+        , td [] [ text msg ]
+        ]
+
+
+viewChatForm : String -> Html Msg
+viewChatForm msg =
+    div [ class "column" ]
+        [ div [ class "box" ]
+            [ Html.form [ onSubmit SubmitChatMessage ]
+                [ div [ class "control" ]
+                    [ p
+                        [ class "control" ]
+                        [ input
+                            [ type_ "text"
+                            , class "input"
+                            , onInput InputChatMessage
+                            , placeholder "Message"
+                            , value msg
+                            ]
+                            []
+                        ]
+                    ]
+                , div [ class "control is-grouped" ]
+                    [ button
+                        [ type_ "submit"
+                        , class "button is-primary"
+                        ]
+                        [ text "Send " ]
+                    ]
+                ]
             ]
         ]
 

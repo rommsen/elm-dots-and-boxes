@@ -5,7 +5,8 @@ import "font-awesome-webpack";
 
 import {
     games,
-    players
+    players,
+    chat
 } from "./firebase";
 
 const Elm = require('../elm/Main');
@@ -38,7 +39,7 @@ app.ports.registerLocalPlayer.subscribe(player => {
                 name: player.name
             });
         })
-          .catch(console.error);
+        .catch(console.error);
 });
 
 app.ports.requestToJoinGame.subscribe(request => {
@@ -48,7 +49,7 @@ app.ports.requestToJoinGame.subscribe(request => {
 
 app.ports.watchGame.subscribe(request => {
     games.watchGame(request)
-          .catch(console.error);
+        .catch(console.error);
 });
 
 games.ref.orderByChild("status").equalTo("Open").on("child_added", data => {
@@ -75,4 +76,13 @@ games.ref.on("child_changed", data => {
         id: data.key
     });
     app.ports.gameChanged.send(game);
+});
+
+app.ports.sendChatMsg.subscribe(msg => {
+    chat.send(msg)
+        .catch(console.error);
+});
+
+chat.ref.on("child_added", data => {
+    app.ports.incomingChatMsg.send(data.val());
 });

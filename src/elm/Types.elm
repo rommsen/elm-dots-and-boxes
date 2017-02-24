@@ -1,6 +1,7 @@
 module Types exposing (..)
 
 import Board.Types exposing (..)
+import Chat.Types as Chat
 import Date
 import Dict exposing (Dict)
 import Game.Types exposing (..)
@@ -17,6 +18,8 @@ type alias Model =
     , openGames : Dict GameId Game
     , runningGames : Dict GameId Game
     , turnTimer : TurnTimer
+    , chatInput : String
+    , chatMessages : List Chat.Message
     }
 
 
@@ -42,3 +45,6 @@ type Msg
     | BackToLobby
     | InputTurnTimer TurnTimer
     | TurnTimerTick Time.Time
+    | InputChatMessage String
+    | SubmitChatMessage
+    | IncomingChatMessage Chat.Message

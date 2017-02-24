@@ -1,17 +1,18 @@
 'use strict';
 
-const config = {
-    apiKey: "AIzaSyC281P_iZqMrZNY8W3qOrzQziXrWq9K-qM",
-    authDomain: "elm-dots-and-boxes.firebaseapp.com",
-    databaseURL: "https://elm-dots-and-boxes.firebaseio.com",
-    storageBucket: "elm-dots-and-boxes.appspot.com",
-    messagingSenderId: "712806609968"
+var config = {
+    apiKey: "AIzaSyBMKSLBUQkpYyEvvgNjsrv6MjAdxr9Dp7E",
+    authDomain: "test-de895.firebaseapp.com",
+    databaseURL: "https://test-de895.firebaseio.com",
+    storageBucket: "test-de895.appspot.com",
+    messagingSenderId: "915320323412"
 };
 
 const app = firebase.initializeApp(config);
 const database = app.database();
 const GAMES_REFPATH = "games";
 const PLAYER_REFPATH = "players";
+const CHAT_REFPATH = "chat";
 
 export const games = {
     open: game => {
@@ -67,4 +68,14 @@ export const players = {
     },
 
     ref: database.ref(PLAYER_REFPATH)
+}
+
+export const chat = {
+    send: msg => {
+        return database
+            .ref(CHAT_REFPATH)
+            .push(msg);
+    },
+
+    ref: database.ref(CHAT_REFPATH)
 }
