@@ -1,11 +1,11 @@
 'use strict';
 
-var config = {
-    apiKey: "AIzaSyBMKSLBUQkpYyEvvgNjsrv6MjAdxr9Dp7E",
-    authDomain: "test-de895.firebaseapp.com",
-    databaseURL: "https://test-de895.firebaseio.com",
-    storageBucket: "test-de895.appspot.com",
-    messagingSenderId: "915320323412"
+const config = {
+    apiKey: "AIzaSyC281P_iZqMrZNY8W3qOrzQziXrWq9K-qM",
+    authDomain: "elm-dots-and-boxes.firebaseapp.com",
+    databaseURL: "https://elm-dots-and-boxes.firebaseio.com",
+    storageBucket: "elm-dots-and-boxes.appspot.com",
+    messagingSenderId: "712806609968"
 };
 
 const app = firebase.initializeApp(config);
