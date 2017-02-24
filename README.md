@@ -3,9 +3,9 @@ I build this project as a learning project to learn Elm.
 I am more than happy for any reviews or ideas where and how to improve.
 
 ## What is it doing?
-It is an online multiplayer implementation of [https://en.wikipedia.org/wiki/Dots_and_Boxes](Dots and Boxes).
+It is an online multiplayer implementation of [Dots and Boxes](https://en.wikipedia.org/wiki/Dots_and_Boxes).
 
-## Why do I think it is cool
+## Why do I think it is cool?
 * Multiplayer: up to five players!
 * Spectator-Mode: watch games of other players
 * many different board sizes
@@ -13,6 +13,17 @@ It is an online multiplayer implementation of [https://en.wikipedia.org/wiki/Dot
 
 ## Thats cool, can I play it online?
 Yes please: https://elm-dots-and-boxes.firebaseapp.com/
+
+## How to play?
+* enter your name
+* open a new game (choose box size or turn timer) or
+* join an open game and wait for acceptance or
+* watch an open or running game
+* when opened: wait for other players and accept them (up to five) then
+* start a new game
+* when joined: wait for acceptance, when not accepted and game started you can watch the game
+* when the owner of the game abandons the game, the other players are informed and can get back to the lobby
+* play
 
 ## What is it based on?
 * Elm (obviously)
