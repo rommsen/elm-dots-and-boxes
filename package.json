@@ -46,6 +46,8 @@
     "webpack-merge": "^0.16.0"
   },
   "dependencies": {
-    "firebaseui": "^1.0.0"
+    "firebaseui": "^1.0.0",
+    "global": "^4.3.1",
+    "superstatic": "^4.0.3"
   }
 }
