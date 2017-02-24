@@ -246,3 +246,32 @@ lineCanNotBeSelected line player game =
     (game.status /= Running)
         || (not <| Player.playerIsCurrent player game.players)
         || (Dict.member line game.selectedLines)
+
+
+getNextFreeLineInGame : Game -> Maybe Line
+getNextFreeLineInGame game =
+    List.foldl
+        (\box result ->
+            case result of
+                Nothing ->
+                    getNextFreeLineInBox box game.selectedLines
+
+                Just line ->
+                    Just line
+        )
+        Nothing
+        game.boxes
+
+
+getNextFreeLineInBox : Box -> SelectedLines -> Maybe Line
+getNextFreeLineInBox box selectedLines =
+    if not <| Dict.member box.up selectedLines then
+        Just box.up
+    else if not <| Dict.member box.down selectedLines then
+        Just box.down
+    else if not <| Dict.member box.left selectedLines then
+        Just box.left
+    else if not <| Dict.member box.right selectedLines then
+        Just box.right
+    else
+        Nothing

@@ -292,9 +292,21 @@ update msg model =
 
                         cmd =
                             if newTimer < 0 && game.owner == localPlayer then
-                                { game | players = Player.advance game.players }
-                                    |> gameEncoder
-                                    |> changeGame
+                                let
+                                    _ =
+                                        Debug.log "line" (getNextFreeLineInGame game)
+                                in
+                                    case getNextFreeLineInGame game of
+                                        Just line ->
+                                            game
+                                                |> selectLine line
+                                                |> gameEncoder
+                                                |> changeGame
+
+                                        Nothing ->
+                                            { game | players = Player.advance game.players }
+                                                |> gameEncoder
+                                                |> changeGame
                             else
                                 Cmd.none
                     in
@@ -323,7 +335,9 @@ update msg model =
             case model.game of
                 Just game ->
                     if game.id == message.gameId then
-                        ( { model | chatMessages = message :: model.chatMessages }, Cmd.none )
+                        ( { model | chatMessages = message :: model.chatMessages }
+                        , Cmd.none
+                        )
                     else
                         ( model, Cmd.none )
 
